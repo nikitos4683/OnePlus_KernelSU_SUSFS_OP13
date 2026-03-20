@@ -1,4 +1,4 @@
-name: Build and Release OnePlus Kernels
+name: Build and Release OnePlus 13 Kernel
 
 permissions:
   contents: write
@@ -12,23 +12,6 @@ on:
         required: true
         type: boolean
         default: false
-      op_model:
-        description: 'Select the OnePlus kernels to build'
-        required: true
-        type: choice
-        options:
-          - OOS14+15+16
-          - OOS15+16
-          - OOS14+15
-          - OOS16
-          - OOS15
-          - OOS14
-          - android16-6.12
-          - android15-6.6
-          - android14-6.1
-          - android13-5.15
-          - android12-5.10
-        default: OOS14+15+16
       ksu_options:
         description: 'Enter KernelSU build json'
         required: true
@@ -44,24 +27,8 @@ on:
         description: 'Clean build (no ccache)'
         type: boolean
         default: false
-      android12-5_10_susfs_branch_or_commit:
-        description: 'Enter SusFS Branch or commit hash for android12-5.10'
-        type: string
-        default: ''      
-      android13-5_15_susfs_branch_or_commit:
-        description: 'Enter SusFS Branch or commit hash for android13-5.15'
-        type: string
-        default: ''      
-      android14-6_1_susfs_branch_or_commit:
-        description: 'Enter SusFS Branch or commit hash for android14-6.1'
-        type: string
-        default: ''
       android15-6_6_susfs_branch_or_commit:
-        description: 'Enter SusFS Branch or commit hash for android15-6.6'
-        type: string
-        default: ''
-      android16-6_12_susfs_branch_or_commit:
-        description: 'Enter SusFS Branch or commit hash for android16-6.12'
+        description: 'Enter SusFS Branch or commit hash for OnePlus 13 (android15-6.6)'
         type: string
         default: ''
 
@@ -86,7 +53,6 @@ jobs:
           set -euo pipefail
           echo "::group::Matrix generation"
           
-          input="${{ github.event.inputs.op_model }}"
           ksu_options_raw='${{ github.event.inputs.ksu_options }}'
           if ! ksu_options_normalized=$(echo "$ksu_options_raw" | jq -c 'map(if .type then .type |= ascii_upcase | if .hash == null then if .type == "KSUN" then .hash = "dev" elif .type == "KSU" then .hash = "main" else .hash end else . end else error("No type found") end)' 2>&1); then
             echo "::error::ksu_options validation failed: $ksu_options_normalized"
@@ -106,47 +72,11 @@ jobs:
           done
           echo "]" >> matrix.json
           
-          jq_filter="."
-          
-          case "$input" in
-            OOS14+15+16)
-              ;;
-            OOS15+16)
-              jq_filter="map(select(.os_version == \"OOS15\" or .os_version == \"OOS16\"))"
-              ;;
-            OOS14+15)
-              jq_filter="map(select(.os_version == \"OOS14\" or .os_version == \"OOS15\"))"
-              ;;
-            OOS16)
-              jq_filter="map(select(.os_version == \"OOS16\"))"
-              ;;
-            OOS15)
-              jq_filter="map(select(.os_version == \"OOS15\"))"
-              ;;
-            OOS14)
-              jq_filter="map(select(.os_version == \"OOS14\"))"
-              ;;
-            android*-*.*)
-              # Extract android version and kernel version
-              IFS='-' read -r av kv <<< "$input"
-              
-              # Build android*-* only for OOS15 and OOS16
-              jq_filter="map(select(.os_version == \"OOS15\" or .os_version == \"OOS16\")) | map(select(.android_version == \"$av\" and .kernel_version == \"$kv\"))"
-              
-              echo "ℹ️  Android-Kernel filter applied: $av-$kv"
-              echo "   Restricted to: OOS15 and OOS16 only"
-              ;;
-            *)
-              echo "::warning::Unknown input '$input'. Using empty filter."
-              jq_filter="map(select(false))"
-              ;;
-          esac
-          
-          filtered=$(jq -c "$jq_filter" matrix.json)
+          filtered=$(jq -c 'map(select(.model == "OP13" and .os_version == "OOS16"))' matrix.json)
           count=$(jq 'length' <<<"$filtered")
           
           if [ "$count" -eq 0 ]; then
-            echo "::error::No config files found for input '$input' after applying filters!"
+            echo "::error::OnePlus 13 OOS16 config not found after applying the repository filter!"
             echo ""
             echo "Available configurations:"
             jq -r '.[] | "  - \(.model) (\(.os_version), \(.android_version)-\(.kernel_version))"' matrix.json
@@ -188,7 +118,7 @@ jobs:
           # cat >> $GITHUB_STEP_SUMMARY << 'EOF'
           # ## 🎯 Build Plan
           
-          # **Target:** `${{ inputs.op_model }}`  
+          # **Target:** `OP13 (OOS16)`  
           # **Devices:** ${{ steps.set-matrix.outputs.count }}  
           
           # **Configuration:**
@@ -204,7 +134,7 @@ jobs:
             cat << 'EOF'
           ## 🎯 Build Plan
           
-          **Target:** ${{ inputs.op_model }}  
+          **Target:** OP13 (OOS16)  
           **Devices:** ${{ steps.set-matrix.outputs.count }}  
           
           **Configuration:**
@@ -224,33 +154,15 @@ jobs:
           EOF
           } >> "$GITHUB_STEP_SUMMARY"
           
-          # Display SUSFS config for each kernel version
-          declare -A susfs_inputs=(
-            ["android12-5.10"]="${{ inputs.android12-5_10_susfs_branch_or_commit }}"
-            ["android13-5.15"]="${{ inputs.android13-5_15_susfs_branch_or_commit }}"
-            ["android14-6.1"]="${{ inputs.android14-6_1_susfs_branch_or_commit }}"
-            ["android15-6.6"]="${{ inputs.android15-6_6_susfs_branch_or_commit }}"
-            ["android16-6.12"]="${{ inputs.android16-6_12_susfs_branch_or_commit }}"
-          )
-          
-          for key in "android12-5.10" "android13-5.15" "android14-6.1" "android15-6.6" "android16-6.12"; do
-            value="${susfs_inputs[$key]}"
-            
-            if [ -z "$value" ]; then
-              echo "- $key: 🔄 auto (\`gki-$key\`)" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "- $key: 📌 \`$value\`" >> $GITHUB_STEP_SUMMARY
-            fi
-          done
+          value="${{ inputs.android15-6_6_susfs_branch_or_commit }}"
+          if [ -z "$value" ]; then
+            echo "- android15-6.6: 🔄 auto (\`gki-android15-6.6\`)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- android15-6.6: 📌 \`$value\`" >> $GITHUB_STEP_SUMMARY
+          fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> **💡 Note:** Empty values auto-map to matching \`gki-androidX-Y.Z\` branches." >> $GITHUB_STEP_SUMMARY
-          
-          # Add OOS restriction note for android-kernel filters
-          if [[ "${{ inputs.op_model }}" == android*-*.* ]]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "> **⚠️ Android-Kernel Filter:** Only OOS15 and OOS16 devices will be built for \`${{ inputs.op_model }}\`" >> $GITHUB_STEP_SUMMARY
-          fi
 
   build:
     name: build (${{ matrix.model }}, ${{ matrix.soc }}, ${{ matrix.branch }}, ${{ matrix.manifest }}, ${{ matrix.android_version }}, ${{ matrix.kernel_version }}, ${{ matrix.os_version }}, ${{ matrix.ksu_type }})
@@ -305,28 +217,12 @@ jobs:
           
           echo "Looking up SUSFS branch for: $key"
           
-          # Map kernel version to input value
-          case "$key" in
-            "android12-5.10")
-              susfs_branch="${{ inputs.android12-5_10_susfs_branch_or_commit }}"
-              ;;
-            "android13-5.15")
-              susfs_branch="${{ inputs.android13-5_15_susfs_branch_or_commit }}"
-              ;;
-            "android14-6.1")
-              susfs_branch="${{ inputs.android14-6_1_susfs_branch_or_commit }}"
-              ;;
-            "android15-6.6")
-              susfs_branch="${{ inputs.android15-6_6_susfs_branch_or_commit }}"
-              ;;
-            "android16-6.12")
-              susfs_branch="${{ inputs.android16-6_12_susfs_branch_or_commit }}"
-              ;;
-            *)
-              echo "::error::Unsupported kernel version: $key"
-              exit 1
-              ;;
-          esac
+          if [ "$key" != "android15-6.6" ]; then
+            echo "::error::Unsupported kernel version for this repository: $key"
+            exit 1
+          fi
+          
+          susfs_branch="${{ inputs.android15-6_6_susfs_branch_or_commit }}"
           
           # If empty, it will be auto-resolved to gki-* branch in the action
           if [ -z "$susfs_branch" ]; then
@@ -536,7 +432,7 @@ jobs:
       REPO_OWNER: ${{ github.repository_owner }}
       REPO_NAME: ${{ github.event.repository.name }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      RELEASE_NAME: '*TEST BUILD* OnePlus Kernels With KernelSU Next & SUSFS v2.1.0 *TEST BUILD*'
+      RELEASE_NAME: '*TEST BUILD* OnePlus 13 Kernel With KernelSU Next & SUSFS v2.1.0 *TEST BUILD*'
       SUSFS_BASE_VERSION: 'v2.1.0'
     steps:
       - name: 📥 Checkout code
@@ -609,21 +505,12 @@ jobs:
           OPTIMIZE_LEVEL="${{ inputs.optimize_level }}"
           CLEAN_BUILD="${{ inputs.clean_build }}"
           
-          # Determine SUSFS branches used
-          SUSFS_A12="${{ inputs.android12-5_10_susfs_branch_or_commit }}"
-          SUSFS_A13="${{ inputs.android13-5_15_susfs_branch_or_commit }}"
-          SUSFS_A14="${{ inputs.android14-6_1_susfs_branch_or_commit }}"
+          # Determine SUSFS branch used
           SUSFS_A15="${{ inputs.android15-6_6_susfs_branch_or_commit }}"
-          SUSFS_A16="${{ inputs.android16-6_12_susfs_branch_or_commit }}"
-          
-          [ -z "$SUSFS_A12" ] && SUSFS_A12="gki-android12-5.10 (auto)"
-          [ -z "$SUSFS_A13" ] && SUSFS_A13="gki-android13-5.15 (auto)"
-          [ -z "$SUSFS_A14" ] && SUSFS_A14="gki-android14-6.1 (auto)"
           [ -z "$SUSFS_A15" ] && SUSFS_A15="gki-android15-6.6 (auto)"
-          [ -z "$SUSFS_A16" ] && SUSFS_A16="gki-android16-6.12 (auto)"
           
           cat << EOF > release_notes.md
-          # 🎯 OnePlus Kernels with KernelSU Next & SUSFS $SUSFS_BASE_VERSION
+          # 🎯 OnePlus 13 Kernel with KernelSU Next & SUSFS $SUSFS_BASE_VERSION
           
           > **Build Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')  
           > **Build ID:** \`${{ github.run_id }}\`  
@@ -711,11 +598,7 @@ jobs:
           
           | Kernel Version | SUSFS Branch/Commit |
           |----------------|---------------------|
-          | android12-5.10 | \`$SUSFS_A12\` |
-          | android13-5.15 | \`$SUSFS_A13\` |
-          | android14-6.1  | \`$SUSFS_A14\` |
           | android15-6.6  | \`$SUSFS_A15\` |
-          | android16-6.12 | \`$SUSFS_A16\` |
           
           ---
           
