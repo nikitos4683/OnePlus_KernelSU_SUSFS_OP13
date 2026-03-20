@@ -62,15 +62,15 @@ Flashing this kernel will not void your warranty, but there is always a risk of 
 - 🔐 **KernelSU / KernelSU-Next**: A root solution for Android GKI devices that works in kernel mode and grants root permission to userspace applications directly in kernel space
 - 🔥 **WildKSU Manager Support**: Support for the Root Manager developed by our team with lots of customisations
 - 🥷 **SUSFS**: An addon root hiding kernel patches and userspace module for KernelSU
-- 🛡️ **BBG**: LSM-based Baseband Guard security to protect critical device partitions
+- 🛡️ **Optional BBG**: LSM-based Baseband Guard security when enabled in device config
 - 🛠️ **HMBIRD SCX**: Scheduler extensions for SM8750/MT6991 devices
 - 🖧 **BBRv1**: Improved TCP congestion control
 - ✅ **LTO**: Link Time Optimisation enabled
-- 🚀 **Optimisation patches**: Memory, I/O, CPU scheduler, network and other general tunings
+- 🚀 **Optional optimisation patches**: Memory, I/O, CPU scheduler, network and other general tunings when enabled in device config
 - 🌐 **TTL Target Support**: Network packet manipulation
 - 🧱 **IP Set & IPv6 NAT Support**: Advanced firewall capabilities and IPv6 NAT Support
 - ⚡️ **TMPFS XATTR / POSIX ACL**: Extended TMPFS support for meta modules and Mountify
-- </> **Unicode Bypass Fix**: Prevent path traversal and other detections using non-printable Unicode codepoints [Experimental]
+- </> **Optional Unicode Bypass Fix**: Prevent path traversal and other detections using non-printable Unicode codepoints when enabled in device config [Experimental]
 
 ---
 

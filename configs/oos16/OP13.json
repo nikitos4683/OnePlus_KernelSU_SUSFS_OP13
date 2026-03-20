@@ -11,10 +11,11 @@
   "disk_cleanup": false,
   "hmbird": true,
   "susfs": true,
-  "bbg": true,
+  "bbg": false,
   "bbr": true,
   "ttl": true,
   "ip_set": true,
-  "unicode": true,
+  "unicode": false,
+  "optimization_patches": false,
   "uname": "OP-WILD"
 }

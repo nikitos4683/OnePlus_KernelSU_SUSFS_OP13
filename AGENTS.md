@@ -70,6 +70,7 @@ Each file in `configs/**/*.json` currently uses this key set:
 - `ttl`
 - `ip_set`
 - `unicode`
+- `optimization_patches`
 - `uname`
 
 Field meaning:
@@ -84,7 +85,7 @@ Field meaning:
 - `lto`: one of `none`, `thin`, or `full`.
 - `rust_build`: whether bindgen/rust tooling is needed.
 - `disk_cleanup`: whether the CI runner should free extra disk space before build.
-- `hmbird`, `susfs`, `bbg`, `bbr`, `ttl`, `ip_set`, `unicode`: feature toggles that influence patching and config mutation.
+- `hmbird`, `susfs`, `bbg`, `bbr`, `ttl`, `ip_set`, `unicode`, `optimization_patches`: feature toggles that influence patching and config mutation.
 - `uname`: custom local version / branding string.
 
 Example observed config:
@@ -103,11 +104,12 @@ Example observed config:
   "disk_cleanup": false,
   "hmbird": true,
   "susfs": true,
-  "bbg": true,
+  "bbg": false,
   "bbr": true,
   "ttl": true,
   "ip_set": true,
-  "unicode": true,
+  "unicode": false,
+  "optimization_patches": false,
   "uname": "OP-WILD"
 }
 ```
@@ -196,12 +198,12 @@ This repo is therefore highly dependent on external network availability and ups
 The composite action applies a wide patch stack. Based on the current action, categories include:
 
 - SUSFS enablement and SUSFS compatibility fixes
-- Baseband Guard related patches
+- Baseband Guard related patches when `bbg` is enabled
 - manual hooks compatibility patch
 - ptrace leak fix for older kernels
 - HMBIRD patches for selected OnePlus devices
-- general optimization patches
-- Unicode bypass fix
+- optional general optimization patches gated by `optimization_patches`
+- Unicode bypass fix when `unicode` is enabled
 - IPv6 NAT related patching
 
 Many patch applications use `patch -p1 --forward` with fuzz or tolerant behavior. That is practical for maintenance, but it also means:
@@ -261,15 +263,15 @@ The README currently advertises support or integration for:
 - KernelSU-Next
 - WildKSU Manager support
 - SUSFS
-- BBG
+- optional BBG
 - HMBIRD SCX
 - BBRv1
 - LTO
-- optimization patches
+- optional optimization patches
 - TTL target support
 - IP Set and IPv6 NAT support
 - TMPFS XATTR and POSIX ACL support
-- Unicode bypass fix
+- optional Unicode bypass fix
 
 Keep README claims aligned with actual config flags and action behavior.
 
