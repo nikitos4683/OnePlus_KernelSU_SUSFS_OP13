@@ -1215,18 +1215,12 @@ runs:
         EOF
 
 
-    - name: Add BBR
+    - name: Confirm BBR Defaults
       if: ${{ env.OP_BBR == 'true' }}
       shell: bash
       run: |
         set -euo pipefail
-        echo "Add BBR"
-        cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
-        CONFIG_TCP_CONG_ADVANCED=y
-        CONFIG_TCP_CONG_BBR=y
-        CONFIG_NET_SCH_FQ=y
-        CONFIG_NET_SCH_FQ_CODEL=y
-        EOF
+        echo "BBR already enabled in upstream gki_defconfig; skipping override"
 
     - name: Add TTL Target Support
       if: ${{ env.OP_TTL == 'true' }}
@@ -1280,15 +1274,12 @@ runs:
         
         patch -p1 -F 3 < "$KERNEL_PATCHES_FOLDER/common/IPv6_NAT_FIX.patch"
 
-    - name: Add Native WireGuard Support
+    - name: Confirm Native WireGuard Default
       if: ${{ env.OP_WIREGUARD == 'true' }}
       shell: bash
       run: |
         set -euo pipefail
-        echo "Add Native WireGuard Support"
-        cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
-        CONFIG_WIREGUARD=y
-        EOF
+        echo "Native WireGuard already enabled in upstream gki_defconfig; skipping override"
 
     - name: Add Build based configs
       shell: bash
