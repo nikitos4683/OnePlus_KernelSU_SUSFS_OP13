@@ -15,6 +15,7 @@
   "bbr": true,
   "ttl": true,
   "ip_set": true,
+  "wireguard": true,
   "unicode": false,
   "optimization_patches": false,
   "uname": "OP-WILD"

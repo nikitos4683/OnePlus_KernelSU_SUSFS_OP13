@@ -69,6 +69,7 @@ Each file in `configs/**/*.json` currently uses this key set:
 - `bbr`
 - `ttl`
 - `ip_set`
+- `wireguard`
 - `unicode`
 - `optimization_patches`
 - `uname`
@@ -85,7 +86,7 @@ Field meaning:
 - `lto`: one of `none`, `thin`, or `full`.
 - `rust_build`: whether bindgen/rust tooling is needed.
 - `disk_cleanup`: whether the CI runner should free extra disk space before build.
-- `hmbird`, `susfs`, `bbg`, `bbr`, `ttl`, `ip_set`, `unicode`, `optimization_patches`: feature toggles that influence patching and config mutation.
+- `hmbird`, `susfs`, `bbg`, `bbr`, `ttl`, `ip_set`, `wireguard`, `unicode`, `optimization_patches`: feature toggles that influence patching and config mutation.
 - `uname`: custom local version / branding string.
 
 Example observed config:
@@ -108,6 +109,7 @@ Example observed config:
   "bbr": true,
   "ttl": true,
   "ip_set": true,
+  "wireguard": true,
   "unicode": false,
   "optimization_patches": false,
   "uname": "OP-WILD"
@@ -202,6 +204,7 @@ The composite action applies a wide patch stack. Based on the current action, ca
 - manual hooks compatibility patch
 - ptrace leak fix for older kernels
 - HMBIRD patches for selected OnePlus devices
+- native WireGuard config enablement when `wireguard` is enabled
 - optional general optimization patches gated by `optimization_patches`
 - Unicode bypass fix when `unicode` is enabled
 - IPv6 NAT related patching
@@ -269,6 +272,7 @@ The README currently advertises support or integration for:
 - LTO
 - optional optimization patches
 - TTL target support
+- native WireGuard support
 - IP Set and IPv6 NAT support
 - TMPFS XATTR and POSIX ACL support
 - optional Unicode bypass fix

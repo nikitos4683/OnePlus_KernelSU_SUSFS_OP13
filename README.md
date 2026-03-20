@@ -68,6 +68,7 @@ Flashing this kernel will not void your warranty, but there is always a risk of 
 - ✅ **LTO**: Link Time Optimisation enabled
 - 🚀 **Optional optimisation patches**: Memory, I/O, CPU scheduler, network and other general tunings when enabled in device config
 - 🌐 **TTL Target Support**: Network packet manipulation
+- 🔐 **Native WireGuard**: Built-in kernel WireGuard VPN support when enabled in device config
 - 🧱 **IP Set & IPv6 NAT Support**: Advanced firewall capabilities and IPv6 NAT Support
 - ⚡️ **TMPFS XATTR / POSIX ACL**: Extended TMPFS support for meta modules and Mountify
 - </> **Optional Unicode Bypass Fix**: Prevent path traversal and other detections using non-printable Unicode codepoints when enabled in device config [Experimental]

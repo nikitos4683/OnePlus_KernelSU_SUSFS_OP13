@@ -95,6 +95,7 @@ runs:
         bbr="$OP_BBR"
         ttl="$OP_TTL"
         ip_set="$OP_IP_SET"
+        wireguard="$OP_WIREGUARD"
         rust_build="$OP_RUST_BUILD"
         lto="$OP_LTO"
         uname="$OP_UNAME"
@@ -192,6 +193,12 @@ runs:
           errors+=("Input 'ip_set' cannot be empty")
         elif [[ "$ip_set" != "true" && "$ip_set" != "false" ]]; then
           errors+=("Input 'ip_set' contains invalid characters. Allowed: 'true' or 'false'. Got: '$ip_set'")
+        fi
+
+        if [[ -z "$wireguard" ]]; then
+          errors+=("Input 'wireguard' cannot be empty")
+        elif [[ "$wireguard" != "true" && "$wireguard" != "false" ]]; then
+          errors+=("Input 'wireguard' contains invalid characters. Allowed: 'true' or 'false'. Got: '$wireguard'")
         fi
         
         if [[ -z "$rust_build" ]]; then
@@ -1232,6 +1239,16 @@ runs:
         
         patch -p1 -F 3 < "$KERNEL_PATCHES_FOLDER/common/IPv6_NAT_FIX.patch"
 
+    - name: Add Native WireGuard Support
+      if: ${{ env.OP_WIREGUARD == 'true' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "Add Native WireGuard Support"
+        cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
+        CONFIG_WIREGUARD=y
+        EOF
+
     - name: Add Build based configs
       shell: bash
       run: |
@@ -1713,6 +1730,7 @@ runs:
           echo "HMBIRD SCX: ${{ env.OP_HMBIRD }}"
           echo "TTL: ${{ env.OP_TTL }}"
           echo "IP_SET & IPv6 NAT: ${{ env.OP_IP_SET }}"
+          echo "Native WireGuard: ${{ env.OP_WIREGUARD }}"
           echo "Unicode Fix: ${{ env.OP_UNICODE }}"
           echo "Optimization Patches: ${{ env.OP_OPTIMIZATION_PATCHES }}"
           echo ""
@@ -1777,6 +1795,7 @@ runs:
           echo "| **HMBIRD SCX** | ${{ env.OP_HMBIRD }} |"
           echo "| **TTL** | ${{ env.OP_TTL }} |"
           echo "| **IP_SET & IPv6 NAT** | ${{ env.OP_IP_SET }} |"
+          echo "| **Native WireGuard** | ${{ env.OP_WIREGUARD }} |"
           echo "| **Unicode Fix** | ${{ env.OP_UNICODE }} |"
           echo "| **Optimization Patches** | ${{ env.OP_OPTIMIZATION_PATCHES }} |"
           

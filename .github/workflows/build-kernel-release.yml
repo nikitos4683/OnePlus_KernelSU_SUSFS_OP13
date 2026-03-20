@@ -531,7 +531,7 @@ jobs:
             feature_flags=$(jq -r --arg MODEL "$model" '
               .[] | 
               select(.model == $MODEL) |
-              "\(.hmbird // false)\t\(.susfs // false)\t\(.bbr // false)\t\(.bbg // false)\t\(.ttl // false)\t\(.ip_set // false)\t\(.unicode // false)\t\(.optimization_patches // false)"
+              "\(.hmbird // false)\t\(.susfs // false)\t\(.bbr // false)\t\(.bbg // false)\t\(.ttl // false)\t\(.ip_set // false)\t\(.wireguard // false)\t\(.unicode // false)\t\(.optimization_patches // false)"
             ' <<< "$JSON_BUILD_DATA")
             
             features=""
@@ -539,7 +539,7 @@ jobs:
             if [[ -z "$feature_flags" ]]; then
               echo "Warning: No JSON entry found for model: $model" >&2
             else
-              IFS=$'\t' read -r hmbird susfs bbr bbg ttl ip_set unicode optimization_patches <<< "$feature_flags"
+              IFS=$'\t' read -r hmbird susfs bbr bbg ttl ip_set wireguard unicode optimization_patches <<< "$feature_flags"
               
               # Build features string based on boolean values
               [[ "$hmbird" == "true" ]] && features+="🐦 HMBIRD "
@@ -547,6 +547,7 @@ jobs:
               [[ "$bbr" == "true" ]] && features+="🚀 BBR "
               [[ "$bbg" == "true" ]] && features+="🛡️ BBG "
               [[ "$ttl" == "true" ]] && features+="🌐 TTL "
+              [[ "$wireguard" == "true" ]] && features+="🔐 WireGuard "
               [[ "$ip_set" == "true" ]] && features+="🧱 IP_SET & IPv6 NAT"
               [[ "$unicode" == "true" ]] && features+="🔧 Unicode Fix"
               [[ "$optimization_patches" == "true" ]] && features+="⚙️ Opt Patches"
@@ -557,6 +558,7 @@ jobs:
           done
 
           BBG_ENABLED=$(jq -r 'any(.[]; .bbg == true)' <<< "$JSON_BUILD_DATA")
+          WIREGUARD_ENABLED=$(jq -r 'any(.[]; .wireguard == true)' <<< "$JSON_BUILD_DATA")
           UNICODE_ENABLED=$(jq -r 'any(.[]; .unicode == true)' <<< "$JSON_BUILD_DATA")
           OPT_PATCHES_ENABLED=$(jq -r 'any(.[]; .optimization_patches == true)' <<< "$JSON_BUILD_DATA")
           
@@ -656,7 +658,11 @@ jobs:
           
           ### 🚀 Performance & Networking
           - **BBRv1** - Improved TCP congestion control
-          - **Wireguard** - Built-in VPN support
+          EOF
+          if [ "$WIREGUARD_ENABLED" = "true" ]; then
+            echo "- **WireGuard** - Built-in kernel VPN support" >> release_notes.md
+          fi
+          cat << EOF >> release_notes.md
           - **IP Set & IPv6 NAT Support** - Advanced firewall capabilities and IPv6 NAT Support
           - **TTL Target Support** - Network packet manipulation
           - **LTO (Link Time Optimization)** - Optimized binary size and performance
