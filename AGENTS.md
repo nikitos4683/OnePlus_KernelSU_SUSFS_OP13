@@ -112,7 +112,7 @@ Example observed config:
   "wireguard": true,
   "unicode": false,
   "optimization_patches": false,
-  "uname": "OP-WILD"
+  "uname": "nixf1ow"
 }
 ```
 
@@ -241,8 +241,8 @@ Observed minimum image size threshold:
 
 Artifact naming:
 
-- Without SUSFS: `AK3_<model>_<os>_<kernel-full>_<ksu-type>_<ksu-version>.zip`
-- With SUSFS: `AK3_<model>_<os>_<kernel-full>_<ksu-type>_<ksu-version>_SuSFS_<susfs-version>.zip`
+- Without SUSFS: `AK3-NIXF1OW-<model>_<os>_<kernel-full>_<ksu-type>_<ksu-version>.zip`
+- With SUSFS: `AK3-NIXF1OW-<model>_<os>_<kernel-full>_<ksu-type>_<ksu-version>_SuSFS_<susfs-version>.zip`
 
 Packaging uses AnyKernel3 and places the built `Image` inside the AnyKernel3 tree before zipping.
 

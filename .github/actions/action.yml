@@ -713,6 +713,47 @@ runs:
         echo "✅ Dependencies cloned"
         echo "::endgroup::"
 
+    - name: Customize AnyKernel3 Installer Branding
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "::group::Customize AnyKernel3 branding"
+        cd "$AK3_FOLDER"
+
+        if [ -f anykernel.sh ]; then
+          sed -i -E 's|^kernel.string=.*$|kernel.string=NixF1ow kernel for OnePlus 13|' anykernel.sh
+          sed -i 's|  -> Wild Kernels Supported:|  -> NixF1ow kernel support:|g' anykernel.sh
+          perl -0pi -e 's|ui_print " "\nui_print "WildKernels Telegram Channel:".*?ui_print " "\n|ui_print " "\nui_print "NixF1ow kernel installation complete."\nui_print " "\n|s' anykernel.sh
+        fi
+
+        cat > banner <<'EOF'
+        ***************************************
+        *      NixF1ow Kernel Installer       *
+        *       OnePlus 13  |  OOS16          *
+        *            by nixf1ow               *
+        ***************************************
+        EOF
+
+        for file in \
+          anykernel.sh \
+          META-INF/com/google/android/update-binary \
+          META-INF/com/google/android/updater-script; do
+          [ -f "$file" ] || continue
+          sed -i \
+            -e 's/Wild Kernels/NixF1ow Kernels/g' \
+            -e 's/WildKernels/NixF1ow/g' \
+            -e 's/Wild Kernel/NixF1ow Kernel/g' \
+            -e 's/Wild kernel/NixF1ow kernel/g' \
+            -e 's/Wild KSU/KernelSU-Next/g' \
+            -e 's/WildKSU/KernelSU-Next/g' \
+            -e 's/Wild_KSU/KernelSU-Next/g' \
+            -e 's/OP-WILD/nixf1ow/g' \
+            "$file"
+        done
+
+        echo "✅ AnyKernel3 branding customized"
+        echo "::endgroup::"
+
     - name: Clean Up ABI Protected Exports
       shell: bash
       run: |
@@ -1408,7 +1449,7 @@ runs:
         
         make O="$OUT" gki_defconfig
         
-        LOCAL_LOCALVERSION="${CUSTOM_LOCALVERSION:--OP-WILD}"
+        LOCAL_LOCALVERSION="${CUSTOM_LOCALVERSION:--nixf1ow}"
         if [ -n "${LOCAL_LOCALVERSION:-}" ]; then
           scripts/config --file "$OUT/.config" --set-str LOCALVERSION "${LOCAL_LOCALVERSION}"
           scripts/config --file "$OUT/.config" -d LOCALVERSION_AUTO || true
@@ -1658,9 +1699,9 @@ runs:
         cd "$AK3_FOLDER"
         
         if [ "${{ env.OP_SUSFS }}" = true ]; then
-          ZIP_NAME="AK3_${OP_MODEL}_${OP_OS_VERSION}_${KERNEL_FULL_VER}_${{ inputs.ksu_type }}_${KSUVER:-unknown}_SuSFS_${SUSVER:-unknown}.zip"
+          ZIP_NAME="AK3-NIXF1OW-${OP_MODEL}_${OP_OS_VERSION}_${KERNEL_FULL_VER}_${{ inputs.ksu_type }}_${KSUVER:-unknown}_SuSFS_${SUSVER:-unknown}.zip"
         else
-          ZIP_NAME="AK3_${OP_MODEL}_${OP_OS_VERSION}_${KERNEL_FULL_VER}_${{ inputs.ksu_type }}_${KSUVER:-unknown}.zip"
+          ZIP_NAME="AK3-NIXF1OW-${OP_MODEL}_${OP_OS_VERSION}_${KERNEL_FULL_VER}_${{ inputs.ksu_type }}_${KSUVER:-unknown}.zip"
         fi
         mkdir -p "$ARTIFACTS_FOLDER"
         
