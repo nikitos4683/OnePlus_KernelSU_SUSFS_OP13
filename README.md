@@ -56,7 +56,7 @@ Our build configurations are meticulously tuned for the best experience on the O
 ### 💎 Core Integrations
 *   **KernelSU / KernelSU-Next:** First-class support for both. Defaulting to `KSUN` (dev branch) for the latest security features.
 *   **SUSFS Support:** Built-in hooks for advanced system-user-space filesystem isolation.
-*   **OxygenOS 16 Optimized:** specifically targeted at `OP13` with Android 15 & Kernel 6.6.
+*   **OxygenOS 16 Optimized:** specifically targeted at `OP13` with Android 16 & Kernel 6.6.
 
 ### 🛠️ Enabled Features
 | Feature | Description |
