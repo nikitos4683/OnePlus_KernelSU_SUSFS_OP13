@@ -180,7 +180,7 @@ High-level flow:
 
 Observed clone targets include:
 
-- `https://github.com/TheWildJames/AnyKernel3.git`
+- `https://github.com/nikitos4683/AnyKernel3.git`
 - `https://github.com/TheWildJames/kernel_patches.git`
 - `https://gitlab.com/simonpunk/susfs4ksu.git`
 
@@ -264,7 +264,6 @@ The README currently advertises support or integration for:
 
 - KernelSU
 - KernelSU-Next
-- WildKSU Manager support
 - SUSFS
 - optional BBG
 - HMBIRD SCX
