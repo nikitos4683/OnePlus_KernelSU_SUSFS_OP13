@@ -1,6 +1,6 @@
 # 📱 Device Compatibility Guide
 
-This document defines the compatibility requirements for nixf1ow kernels.
+This document defines the compatibility requirements for nikitos4683 kernels.
 
 ---
 

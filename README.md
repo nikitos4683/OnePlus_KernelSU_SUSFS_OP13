@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌟 NixF1ows Kernel for OnePlus 13
+# 🌟 nikitos4683 Kernel for OnePlus 13
 
 **A premium custom kernel experience focused on security, performance, and features.**
 
@@ -12,7 +12,7 @@
 
 ### 🚀 Powered by [WildKernels](https://github.com/WildKernels) | Branch: OOS16
 
-> This repository is a boutique, nixf1ow-branded kernel fork tailored for the **OnePlus 13 (OP13)** running **OxygenOS 16**. It combines the power of modern kernel development with cutting-edge security extensions.
+> This repository is a boutique, nikitos4683-branded kernel fork tailored for the **OnePlus 13 (OP13)** running **OxygenOS 16**. It combines the power of modern kernel development with cutting-edge security extensions.
 
 </div>
 
@@ -68,7 +68,7 @@ Our build configurations are meticulously tuned for the best experience on the O
 | ✅ **IP Set & IPv6 NAT** | Enhanced networking and firewall capabilities |
 | ✅ **Thin LTO** | Link-Time Optimization for a balanced build performance |
 | ✅ **TMPFS XATTR** | POSIX ACL Support for enhanced filesystem security |
-| ✅ **Custom Branding** | Localversion set to `nixf1ow` |
+| ✅ **Custom Branding** | Localversion set to `nikitos4683` |
 
 ### 🚫 Disabled / Experimental
 *   **Baseband Guard (BBG):** Currently inactive.
