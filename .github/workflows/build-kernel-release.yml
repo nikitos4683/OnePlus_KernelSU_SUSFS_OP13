@@ -432,7 +432,7 @@ jobs:
       REPO_OWNER: ${{ github.repository_owner }}
       REPO_NAME: ${{ github.event.repository.name }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      RELEASE_NAME: '*TEST BUILD* OnePlus 13 Kernel With KernelSU Next & SUSFS v2.1.0 *TEST BUILD*'
+      RELEASE_BRAND: 'nikitos4683'
       SUSFS_BASE_VERSION: 'v2.1.0'
     steps:
       - name: 📥 Checkout code
@@ -501,6 +501,16 @@ jobs:
           # Get workflow inputs for reference
           KSUN_BRANCH="$ksun_hash"
           KSU_BRANCH="$ksu_hash"
+
+          if [ -n "$KSUN_BRANCH" ] && [ -n "$KSU_BRANCH" ]; then
+            KSU_FLAVOR="KernelSU + KernelSU Next"
+          elif [ -n "$KSUN_BRANCH" ]; then
+            KSU_FLAVOR="KernelSU Next"
+          elif [ -n "$KSU_BRANCH" ]; then
+            KSU_FLAVOR="KernelSU"
+          else
+            KSU_FLAVOR="KernelSU"
+          fi
           
           OPTIMIZE_LEVEL="${{ inputs.optimize_level }}"
           CLEAN_BUILD="${{ inputs.clean_build }}"
@@ -508,12 +518,18 @@ jobs:
           # Determine SUSFS branch used
           SUSFS_A15="${{ inputs.android15-6_6_susfs_branch_or_commit }}"
           [ -z "$SUSFS_A15" ] && SUSFS_A15="gki-android15-6.6 (auto)"
+
+          RELEASE_TITLE="${RELEASE_BRAND} Kernel for OnePlus 13 | ${KSU_FLAVOR} | SUSFS ${SUSFS_BASE_VERSION}"
+          echo "release_title=$RELEASE_TITLE" >> "$GITHUB_OUTPUT"
           
           cat << EOF > release_notes.md
-          # 🎯 OnePlus 13 Kernel with KernelSU Next & SUSFS $SUSFS_BASE_VERSION
+          # 🎯 ${RELEASE_BRAND} Kernel for OnePlus 13
           
           > **Build Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')  
           > **Build ID:** \`${{ github.run_id }}\`  
+          > **Fork:** [\`${REPO_OWNER}/${REPO_NAME}\`](${{ github.server_url }}/${{ github.repository }})  
+          > **Maintainer:** \`@${REPO_OWNER}\`  
+          > **Root Stack:** \`${KSU_FLAVOR}\` + \`SUSFS ${SUSFS_BASE_VERSION}\`  
           > **Workflow:** [\`${{ github.workflow }}\`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           
           ---
@@ -543,24 +559,57 @@ jobs:
               
               # Build features string based on boolean values
               [[ "$hmbird" == "true" ]] && features+="🐦 HMBIRD "
-              [[ "$susfs" == "true" ]] && features+="ඞ SusFS "
-              [[ "$bbr" == "true" ]] && features+="🚀 BBR "
+              [[ "$susfs" == "true" ]] && features+="ඞ SUSFS "
+              [[ "$bbr" == "true" ]] && features+="🚀 BBRv1 "
               [[ "$bbg" == "true" ]] && features+="🛡️ BBG "
               [[ "$ttl" == "true" ]] && features+="🌐 TTL "
               [[ "$wireguard" == "true" ]] && features+="🔐 WireGuard "
-              [[ "$ip_set" == "true" ]] && features+="🧱 IP_SET & IPv6 NAT"
-              [[ "$unicode" == "true" ]] && features+="🔧 Unicode Fix"
-              [[ "$optimization_patches" == "true" ]] && features+="⚙️ Opt Patches"
+              [[ "$ip_set" == "true" ]] && features+="🧱 IP Set & IPv6 NAT "
+              [[ "$unicode" == "true" ]] && features+="🔧 Unicode Bypass Fix "
+              [[ "$optimization_patches" == "true" ]] && features+="⚙️ Optimisation Patches "
             fi
             
             printf "| %-13s | %-10s | %-16s | %-30s |\n" \
               "$model" "$os_ver" "$kernel_ver" "$features" >> release_notes.md
           done
 
+          HMBIRD_ENABLED=$(jq -r 'any(.[]; .hmbird == true)' <<< "$JSON_BUILD_DATA")
+          BBR_ENABLED=$(jq -r 'any(.[]; .bbr == true)' <<< "$JSON_BUILD_DATA")
           BBG_ENABLED=$(jq -r 'any(.[]; .bbg == true)' <<< "$JSON_BUILD_DATA")
+          TTL_ENABLED=$(jq -r 'any(.[]; .ttl == true)' <<< "$JSON_BUILD_DATA")
+          IP_SET_ENABLED=$(jq -r 'any(.[]; .ip_set == true)' <<< "$JSON_BUILD_DATA")
           WIREGUARD_ENABLED=$(jq -r 'any(.[]; .wireguard == true)' <<< "$JSON_BUILD_DATA")
           UNICODE_ENABLED=$(jq -r 'any(.[]; .unicode == true)' <<< "$JSON_BUILD_DATA")
           OPT_PATCHES_ENABLED=$(jq -r 'any(.[]; .optimization_patches == true)' <<< "$JSON_BUILD_DATA")
+          SUSFS_ENABLED=$(jq -r 'any(.[]; .susfs == true)' <<< "$JSON_BUILD_DATA")
+          RUST_BUILD_ENABLED=$(jq -r 'any(.[]; .rust_build == true)' <<< "$JSON_BUILD_DATA")
+          TARGET_MODEL=$(jq -r 'first(.[] | .model // empty)' <<< "$JSON_BUILD_DATA")
+          TARGET_OS=$(jq -r 'first(.[] | .os_version // empty)' <<< "$JSON_BUILD_DATA")
+          TARGET_ANDROID=$(jq -r 'first(.[] | .android_version // empty)' <<< "$JSON_BUILD_DATA")
+          TARGET_KERNEL=$(jq -r 'first(.[] | .kernel_version // empty)' <<< "$JSON_BUILD_DATA")
+          LTO_MODE=$(jq -r 'first(.[] | .lto // empty)' <<< "$JSON_BUILD_DATA")
+          CUSTOM_UNAME=$(jq -r 'first(.[] | .uname // empty)' <<< "$JSON_BUILD_DATA")
+          OS_LABEL="${TARGET_OS/OOS/OxygenOS }"
+          ANDROID_LABEL="${TARGET_ANDROID/android/Android }"
+
+          case "$LTO_MODE" in
+            thin)
+              LTO_LABEL="Thin LTO"
+              LTO_DESC="Link-Time Optimization for a balanced build performance"
+              ;;
+            full)
+              LTO_LABEL="Full LTO"
+              LTO_DESC="Full Link-Time Optimization for maximum optimization"
+              ;;
+            none|"")
+              LTO_LABEL=""
+              LTO_DESC=""
+              ;;
+            *)
+              LTO_LABEL="${LTO_MODE} LTO"
+              LTO_DESC="Selected Link-Time Optimization mode for this build"
+              ;;
+          esac
           
           if [ ${#device_info[@]} -gt 0 ]; then
             first_entry=$(printf '%s\n' "${!device_info[@]}" | sort | head -n1)
@@ -611,67 +660,62 @@ jobs:
           
           ## ✨ Features & Capabilities
           
-          ### 🔐 Root Management
+          ### 💎 Core Integrations
+          - **${KSU_FLAVOR}** - First-class support for the selected root stack.
           EOF
-          if [ -n "$KSUN_BRANCH" ]; then
-            cat << EOF >> release_notes.md
-          - **KernelSU Next** - Next-generation kernel-level root solution
-          EOF
-          elif [ -n "$KSU_BRANCH" ]; then
-            cat << EOF >> release_notes.md
-          - **KernelSU** - Kernel-level root solution
-          EOF
+          if [ "$SUSFS_ENABLED" = "true" ]; then
+            echo "- **SUSFS Support** - Built-in hooks for advanced system-user-space filesystem isolation." >> release_notes.md
           fi
           cat << EOF >> release_notes.md
-          - **SUSFS $SUSFS_BASE_VERSION** - Advanced hiding and security features
+          - **${OS_LABEL:-OOS16} Optimized** - Specifically targeted at \`${TARGET_MODEL:-OP13}\` with ${ANDROID_LABEL:-Android 15} & Kernel ${TARGET_KERNEL:-6.6}.
+          
+          ### 🛠️ Enabled Features
           EOF
-          if [ -n "$KSUN_BRANCH" ] && [ "${ksu_ver_global:-0}" -lt 12884 ]; then
-            cat << EOF >> release_notes.md
-          - **Magic Mount Support** - Seamless file system modifications
-          EOF
+          if [ "$HMBIRD_ENABLED" = "true" ]; then
+            echo "- **HMBIRD SCX** - Advanced scheduler extensions." >> release_notes.md
           fi
-          if [ "${ksu_ver_global:-0}" -lt 12884 ]; then
-            cat << EOF >> release_notes.md
-          - **Manual Hooks** - scope_min_manual_hooks_v1.4 for better compatibility
-          EOF
+          if [ "$BBR_ENABLED" = "true" ]; then
+            echo "- **BBRv1** - Google's TCP congestion control for better network responsiveness." >> release_notes.md
+          fi
+          if [ "$TTL_ENABLED" = "true" ]; then
+            echo "- **TTL Target** - Native support for TTL modification." >> release_notes.md
+          fi
+          if [ "$WIREGUARD_ENABLED" = "true" ]; then
+            echo "- **WireGuard** - High-performance, secure VPN kernel support." >> release_notes.md
+          fi
+          if [ "$IP_SET_ENABLED" = "true" ]; then
+            echo "- **IP Set & IPv6 NAT** - Enhanced networking and firewall capabilities." >> release_notes.md
+          fi
+          if [ -n "$LTO_LABEL" ]; then
+            echo "- **$LTO_LABEL** - $LTO_DESC." >> release_notes.md
+          fi
+          echo "- **TMPFS XATTR & POSIX ACL** - Enhanced filesystem security and Mountify compatibility." >> release_notes.md
+          if [ -n "$CUSTOM_UNAME" ]; then
+            echo "- **Custom Branding** - Localversion set to \`$CUSTOM_UNAME\`." >> release_notes.md
+          fi
+          if [ "$OPT_PATCHES_ENABLED" = "true" ]; then
+            echo "- **Optimisation Patches** - Optional general performance tuning patchset." >> release_notes.md
           fi
           cat << EOF >> release_notes.md
-          ### 🛡️ Security & Privacy
-          - **SUSFS Hide Features**:
-            - ✅ SUS_PATH - Hide suspicious paths
-            - ✅ SUS_MOUNT - Hide mount points (No Cli Support)
-            - ✅ SUS_KSTAT - Spoof kernel statistics
-            - ✅ SPOOF_UNAME - Kernel version spoofing
-            - ✅ SPOOF_CMDLINE - Boot parameters spoofing
-            - ✅ OPEN_REDIRECT - File access redirection
-            - ✅ SUS_MAP - Memory mapping protection
-            - ✅ AVC_SPOOF - Spoof Procfs avc denial logs
-          - **Ptrace Leak Fix** - For kernels < 5.16
+          
+          ### 🧪 Optional / Experimental Flags
           EOF
           if [ "$BBG_ENABLED" = "true" ]; then
-            echo "- **Baseband Guard (BBG)** - LSM-based baseband security" >> release_notes.md
+            echo "- **Baseband Guard (BBG)** - Enabled for this build." >> release_notes.md
+          else
+            echo "- **Baseband Guard (BBG)** - Currently inactive." >> release_notes.md
           fi
           if [ "$UNICODE_ENABLED" = "true" ]; then
-            echo "- **Unicode Fix** - Prevent path traversal and other detections using non-printable Unicode codepoints [Experimental]" >> release_notes.md
+            echo "- **Unicode Bypass Fix** - Enabled for this build." >> release_notes.md
+          else
+            echo "- **Unicode Bypass Fix** - Disabled in the current stable branch." >> release_notes.md
+          fi
+          if [ "$RUST_BUILD_ENABLED" = "true" ]; then
+            echo "- **Rust Path** - Bindgen build path is enabled for this build." >> release_notes.md
+          else
+            echo "- **Rust Path** - Bindgen build path is currently disabled." >> release_notes.md
           fi
           cat << EOF >> release_notes.md
-          
-          ### 🚀 Performance & Networking
-          - **BBRv1** - Improved TCP congestion control
-          EOF
-          if [ "$WIREGUARD_ENABLED" = "true" ]; then
-            echo "- **WireGuard** - Built-in kernel VPN support" >> release_notes.md
-          fi
-          cat << EOF >> release_notes.md
-          - **IP Set & IPv6 NAT Support** - Advanced firewall capabilities and IPv6 NAT Support
-          - **TTL Target Support** - Network packet manipulation
-          - **LTO (Link Time Optimization)** - Optimized binary size and performance
-          - **ccache-accelerated builds** - Faster compilation times
-          
-          ### 🔧 System Features
-          - **TMPFS_XATTR** - Extended attributes for tmpfs (Mountify support)
-          - **TMPFS_POSIX_ACL** - POSIX ACLs for tmpfs
-          - **HMBIRD SCX** - Scheduler extensions for all SM8750/MT6991 devices
           
           ---
           
@@ -691,15 +735,11 @@ jobs:
           EOF
           fi
           cat << EOF >> release_notes.md
-          ### Community Managers
-          - **WildKSU Manager** (Recommended for additional features)  
-            → [GitHub Release](https://github.com/WildKernels/Wild_KSU/releases)
-          
           ### Required Module
           - **KSU SUSFS Module** (Required for SUSFS features)  
             → [GitHub Release](https://github.com/sidex15/ksu_module_susfs/releases)
           
-          ### Recomended Flasher
+          ### Recommended Flasher
           - **Kernel Flasher** (Required for flashing AnyKernel3 zips and backups and OTA)  
             → [GitHub Release](https://github.com/fatalcoder524/KernelFlasher/releases)
           
@@ -709,7 +749,7 @@ jobs:
           if [ "$OPT_PATCHES_ENABLED" = "true" ]; then
             cat << EOF >> release_notes.md
           ### ⚙️ Optional Tuning
-          - **Optimisation Patches** - Memory, I/O, CPU scheduler, network and other general tunings
+          - **Optimisation Patches** - Optional general performance tuning patchset.
 
           ---
           
@@ -727,28 +767,64 @@ jobs:
           1. Download the appropriate ZIP for your device.
           2. Flash the ZIP file using Kernel Flasher.
           3. Reboot system.
-          4. Install KernelSU-Next/WildSU Manager.
+          4. Install your preferred compatible KernelSU manager.
           5. Install SUSFS module from manager.
           
           ---
           
-          ## 📜 Changelog
+          ## 📜 Patch Set Summary
           
-          ### This Release
-          - Updated SUSFS to v2.1.0.
-          - Added HMBIRD support for all SM8750/MT6991 devices.
-          - Improved ccache build system.
-          - Enhanced SUSFS hiding capabilities.
-          - Added IP_SET, IPv6 NAT and TTL support.
-          - Added TMPFS_XATTR and TMPFS_POSIX_ACL support for Mountify.
-          - Added Ptrace leak fix for kernels < 5.16.
-          - Compiler optimizations (${{ inputs.optimize_level }}).
+          ### Included In This Build
+          - **${KSU_FLAVOR}** integration.
           EOF
+          if [ "$SUSFS_ENABLED" = "true" ]; then
+            echo "- **SUSFS ${SUSFS_BASE_VERSION}** support." >> release_notes.md
+          fi
+          if [ "$HMBIRD_ENABLED" = "true" ]; then
+            echo "- **HMBIRD SCX** scheduler extensions." >> release_notes.md
+          fi
+          if [ "$BBR_ENABLED" = "true" ]; then
+            echo "- **BBRv1** networking patchset." >> release_notes.md
+          fi
+          if [ "$TTL_ENABLED" = "true" ]; then
+            echo "- **TTL Target** support." >> release_notes.md
+          fi
+          if [ "$WIREGUARD_ENABLED" = "true" ]; then
+            echo "- **WireGuard** kernel support." >> release_notes.md
+          fi
+          if [ "$IP_SET_ENABLED" = "true" ]; then
+            echo "- **IP Set & IPv6 NAT** support." >> release_notes.md
+          fi
+          if [ -n "$LTO_LABEL" ]; then
+            echo "- **$LTO_LABEL**." >> release_notes.md
+          fi
+          echo "- **TMPFS XATTR & POSIX ACL** support." >> release_notes.md
+          if [ -n "$CUSTOM_UNAME" ]; then
+            echo "- **Custom Branding** with localversion \`$CUSTOM_UNAME\`." >> release_notes.md
+          fi
           if [ "$OPT_PATCHES_ENABLED" = "true" ]; then
-            echo "- Additional General Optimisations." >> release_notes.md
+            echo "- **Optimisation Patches** enabled." >> release_notes.md
           fi
           cat << EOF >> release_notes.md
-          - Wild_KSU Manager Support.
+          
+          ### Disabled / Experimental In This Branch
+          EOF
+          if [ "$BBG_ENABLED" = "true" ]; then
+            echo "- **Baseband Guard (BBG)** is enabled." >> release_notes.md
+          else
+            echo "- **Baseband Guard (BBG)** is currently inactive." >> release_notes.md
+          fi
+          if [ "$UNICODE_ENABLED" = "true" ]; then
+            echo "- **Unicode Bypass Fix** is enabled." >> release_notes.md
+          else
+            echo "- **Unicode Bypass Fix** is disabled." >> release_notes.md
+          fi
+          if [ "$RUST_BUILD_ENABLED" = "true" ]; then
+            echo "- **Rust Path** is enabled." >> release_notes.md
+          else
+            echo "- **Rust Path** is disabled." >> release_notes.md
+          fi
+          cat << EOF >> release_notes.md
           
           ### Previous Releases
           See [Releases Page](${{ github.server_url }}/${{ github.repository }}/releases)
@@ -757,6 +833,7 @@ jobs:
           
           ## 🙏 Credits
           
+          - **$REPO_OWNER** - Fork maintenance and release packaging
           - **KernelSU Next Team** - Root solution
           - **KernelSU Team** - Root solution
           - **simonpunk** - SUSFS development
@@ -765,12 +842,9 @@ jobs:
           
           ---
           
-          **⚡ Built with ❤️ by the community**
+          **⚡ Built for the ${RELEASE_BRAND} fork**
           
           EOF
-          if [ "$UNICODE_ENABLED" = "true" ]; then
-            sed -i '/- Wild_KSU Manager Support\./a - Unicode Bypass Fix' release_notes.md
-          fi
           
           echo "--- Final Release Notes ---"
           cat release_notes.md
@@ -779,7 +853,7 @@ jobs:
         run: |
           gh release create "${{ env.NEW_TAG }}" \
             --repo "${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}" \
-            --title "${{ env.RELEASE_NAME }}" \
+            --title "${{ steps.generate-notes.outputs.release_title }}" \
             --notes-file release_notes.md \
             --draft
 
