@@ -69,22 +69,37 @@ Our build configurations are meticulously tuned for the best experience on the O
 | ✅ **Thin LTO** | Link-Time Optimization for a balanced build performance |
 | ✅ **TMPFS XATTR** | POSIX ACL Support for enhanced filesystem security |
 | ✅ **Custom Branding** | Localversion set to `nikitos4683` |
+| ✅ **nikitos4683 Exclusive Patches** | Local patches for AnyKernel3 Custom Branding and native SUSFS Multi-manager support |
 
 ### 🚫 Disabled / Experimental
+*   **Optimization Patches:** General optimization patch stack is deliberately disabled to maintain stability.
 *   **Baseband Guard (BBG):** Currently inactive.
 *   **Unicode Bypass Fix:** Disabled in the current stable branch.
 *   **Rust Path:** Bindgen build path is currently disabled.
 
 ---
 
+### ⬇️ Downloads
+You can download the pre-built kernels from the **[Releases](../../releases)** tab. The files are distributed as AnyKernel3 flashable ZIPs.
+
+Filename breakdown:
+`AK3-NIKITOS4683-<Device>_<OS>_<Kernel>_<KSU-Variant>_SuSFS_<Version>.zip`
+
+---
+
 ## 📝 Installation Instructions
 
-For a safe and successful installation, please follow the official GKI guidelines:
+Because this kernel is provided as an **AnyKernel3** flashable ZIP, the standard KernelSU boot.img patching method is not needed.
 
-👉 **[KernelSU Official Installation Guide](https://kernelsu.org/guide/installation.html)**
+1. **Download** the zip of your choice from the Releases page.
+2. **Flash** the zip using a kernel flasher app (we highly recommend [Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher)).
+3. **Reboot** your device.
+4. **Install** the appropriate manager APK:
+   - For `KSU` builds: [KernelSU Manager](https://github.com/tiann/KernelSU/releases)
+   - For `KSUN` builds: [KernelSU-Next Manager](https://github.com/KernelSU-Next/KernelSU-Next/releases)
 
 > [!TIP]
-> Always check the specific release notes for each version, as they may contain important update-specific instructions.
+> Always check the specific release notes for each version, as they may contain important update-specific instructions or prerequisites.
 
 ---
 
