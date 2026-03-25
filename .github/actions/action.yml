@@ -1411,6 +1411,15 @@ runs:
         fi
         echo "============================================"
         
+        if [ "${{ inputs.ksu_type }}" = "KSUN" ]; then
+          export KSU_MANAGER_PACKAGE="dbvxdv.nehnrp.oxjehi"
+          export KSU_NEXT_MANAGER_SIZE="0x588"
+          export KSU_NEXT_MANAGER_HASH="46ff70534cbd9ff8ae8807bbceda83505cf5ca301dffedcb73722c1b1d6e5b14"
+          echo "KernelSU-Next manager package: $KSU_MANAGER_PACKAGE"
+          echo "KernelSU-Next manager signature size: $KSU_NEXT_MANAGER_SIZE"
+          echo "KernelSU-Next manager signature hash: $KSU_NEXT_MANAGER_HASH"
+        fi
+
         make O="$OUT" gki_defconfig
         
         LOCAL_LOCALVERSION="${CUSTOM_LOCALVERSION:--nikitos4683}"
