@@ -23,6 +23,7 @@ This repository is currently dedicated to a single active target: **OnePlus 13**
 
 *   **Major OTAs:** Do not attempt to use this kernel after a major Android version upgrade (e.g., A15 -> A16) until a new compatible build is released.
 *   **Verification:** Confirm compatibility against the current branch and the latest released build before flashing after any OTA.
+*   **Cross-device flashing:** Anything outside OP13/OOS16 should be treated as unsupported unless a release explicitly says otherwise.
 
 ---
 

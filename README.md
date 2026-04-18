@@ -2,17 +2,16 @@
 
 # 🌟 nikitos4683 Kernel for OnePlus 13
 
-**A premium custom kernel experience focused on security, performance, and features.**
+**A OnePlus 13 / OxygenOS 16 focused kernel fork with KernelSU, KernelSU-Next, SUSFS, and a curated patch stack.**
 
 [![KernelSU](https://img.shields.io/badge/KernelSU-Supported-1a7f37?style=for-the-badge&logo=android&logoColor=white)](https://kernelsu.org/)
 [![KernelSU-Next](https://img.shields.io/badge/KSU--Next-Integrated-1a7f37?style=for-the-badge&logo=github&logoColor=white)](https://kernelsu-next.github.io/webpage/)
 [![SUSFS](https://img.shields.io/badge/SUSFS-Enhanced-d97706?style=for-the-badge&logo=gitlab&logoColor=white)](https://gitlab.com/simonpunk/susfs4ksu)
-
----
+[![OnePlusOSS Tracking Status](https://img.shields.io/badge/OnePlusOSS--Tracker-active-green)](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md)
 
 ### 🚀 Powered by [WildKernels](https://github.com/WildKernels) | Branch: OOS16
 
-> This repository is a boutique, nikitos4683-branded kernel fork tailored for the **OnePlus 13 (OP13)** running **OxygenOS 16**. It combines the power of modern kernel development with cutting-edge security extensions.
+> This repository is a boutique, nikitos4683-branded kernel fork tailored for the **OnePlus 13 (OP13)** running **OxygenOS 16**.
 
 </div>
 
@@ -46,7 +45,14 @@ Flashing a custom kernel is a choice you make for your device. While we strive f
 | 🩹 [Kernel Patches](https://github.com/WildKernels/kernel_patches) | Core patches used in the build process |
 | ⚡ [Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher) | Recommended tool for safe flashing |
 | 📱 [Compatibility Info](./compatibility.md) | Verify supported base versions |
+| 📊 [OnePlusOSS Tracking Dashboard](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md) | Upstream OnePlusOSS branch tracker |
 
+---
+
+## 📱 OnePlusOSS Repositories Tracking
+
+- 📊 **Live Dashboard**: [OnePlus Repos Tracking & Changes](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md)
+- ⏱️ **Update Frequency**: Every 2 hours (Automated)
 ---
 
 ## ✨ Features
@@ -76,6 +82,7 @@ Our build configurations are meticulously tuned for the best experience on the O
 *   **Baseband Guard (BBG):** Currently inactive.
 *   **Unicode Bypass Fix:** Disabled in the current stable branch.
 *   **Rust Path:** Bindgen build path is currently disabled.
+*   **Droidspaces / NTSync:** Supported by the workflow codepath, but currently disabled in the active `OP13` config.
 
 ---
 
@@ -116,6 +123,8 @@ This project stands on the shoulders of giants. immense gratitude to the followi
 | **SUSFS** | **simonpunk** | [![GitLab](https://img.shields.io/badge/GitLab-orange?style=flat-square&logo=gitlab)](https://gitlab.com/simonpunk) |
 | **WildKernels** | **fatalcoder524** | [![GitHub](https://img.shields.io/badge/GitHub-blue?style=flat-square&logo=github)](https://github.com/WildKernels) |
 | **SUSFS Module** | **sidex15** | [![GitHub](https://img.shields.io/badge/GitHub-blue?style=flat-square&logo=github)](https://github.com/sidex15) |
+| **Baseband Guard** | **vc-teahouse** | [![GitHub](https://img.shields.io/badge/GitHub-blue?style=flat-square&logo=github)](https://github.com/vc-teahouse/Baseband-guard.git) |
+| **Droidspaces** | **ravindu644** | [![GitHub](https://img.shields.io/badge/GitHub-blue?style=flat-square&logo=github)](https://github.com/ravindu644/Droidspaces-OSS.git) |
 
 </div>
 

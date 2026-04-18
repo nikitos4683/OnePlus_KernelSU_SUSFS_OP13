@@ -27,6 +27,8 @@ If you are debugging or extending this repo, always remember that many failures 
 - `configs/`: the active device build metadata lives in `configs/oos16/OP13.json`. Legacy OS folders may still exist as empty directories after cleanup.
 - `manifests/`: the active local XML manifest is `manifests/oos16/oneplus_13_w.xml`. Legacy OS folders may still exist as empty directories after cleanup.
 - `.github/workflows/build-kernel-release.yml`: main entry point, manual-only workflow, matrix generation, optional release creation.
+- `.github/workflows/clean-up.yml`: maintenance workflow for cache and workflow-run cleanup.
+- `.github/workflows/oplus-kernel-monitor.yml`: optional upstream OnePlusOSS tracker that updates the `status-page` branch.
 - `.github/actions/action.yml`: composite action with the real build logic, validation, sync, patching, build, validation, and packaging.
 - `README.md`: project overview, advertised features, install pointers, credits, and support links.
 - `compatibility.md`: device compatibility notes and flashing caveats.
@@ -61,16 +63,21 @@ Each file in `configs/**/*.json` currently uses this key set:
 - `kernel_version`
 - `os_version`
 - `lto`
+- `zyc_compiler`
+- `c_compiler`
+- `rust_compiler`
 - `rust_build`
 - `disk_cleanup`
 - `hmbird`
 - `susfs`
+- `ds`
 - `bbg`
 - `bbr`
 - `ttl`
 - `ip_set`
 - `wireguard`
 - `unicode`
+- `ntsync`
 - `optimization_patches`
 - `uname`
 
@@ -84,9 +91,12 @@ Field meaning:
 - `kernel_version`: kernel family in `X.Y` form, for example `6.6`.
 - `os_version`: OOS generation, for example `OOS16`.
 - `lto`: one of `none`, `thin`, or `full`.
+- `zyc_compiler`: optional external clang tarball URL. Empty string keeps default toolchain selection.
+- `c_compiler`: optional in-tree clang path override.
+- `rust_compiler`: optional in-tree rust toolchain path override.
 - `rust_build`: whether bindgen/rust tooling is needed.
 - `disk_cleanup`: whether the CI runner should free extra disk space before build.
-- `hmbird`, `susfs`, `bbg`, `bbr`, `ttl`, `ip_set`, `wireguard`, `unicode`, `optimization_patches`: feature toggles that influence patching and config mutation.
+- `hmbird`, `susfs`, `ds`, `bbg`, `bbr`, `ttl`, `ip_set`, `wireguard`, `unicode`, `ntsync`, `optimization_patches`: feature toggles that influence patching and config mutation.
 - `uname`: custom local version / branding string.
 
 Example observed config:
@@ -101,16 +111,21 @@ Example observed config:
   "kernel_version": "6.6",
   "os_version": "OOS16",
   "lto": "thin",
+  "zyc_compiler": "",
+  "c_compiler": "",
+  "rust_compiler": "",
   "rust_build": false,
   "disk_cleanup": false,
   "hmbird": true,
   "susfs": true,
+  "ds": false,
   "bbg": false,
   "bbr": true,
   "ttl": true,
   "ip_set": true,
   "wireguard": true,
   "unicode": false,
+  "ntsync": false,
   "optimization_patches": false,
   "uname": "nikitos4683"
 }
@@ -140,6 +155,7 @@ Key inputs:
 - `ksu_options`: JSON array describing KSU variants to build.
 - `optimize_level`: `O2` or `O3`.
 - `clean_build`: disables ccache usage.
+- `build_timestamp`: optional fixed timestamp for `uname -a` / reproducible branding.
 - `android15-6_6_susfs_branch_or_commit`
 
 Important workflow behavior:
@@ -150,7 +166,7 @@ Important workflow behavior:
 - `ksu_options` is normalized with `jq`.
 - If a KSU entry omits `hash`, defaults are `KSUN -> dev` and `KSU -> main`.
 - Each device config is multiplied by each KSU option, producing one matrix row per combination.
-- The workflow input surface is intentionally reduced to the OnePlus 13 OOS16 path only.
+- The workflow input surface is intentionally reduced to the OnePlus 13 OOS16 path only, even though some shared helper logic still computes generic GKI metadata.
 
 ## Composite Action: action.yml
 
@@ -204,7 +220,9 @@ The composite action applies a wide patch stack. Based on the current action, ca
 - manual hooks compatibility patch
 - ptrace leak fix for older kernels
 - HMBIRD patches for selected OnePlus devices
+- optional Droidspaces enablement when `ds` is enabled
 - native WireGuard config enablement when `wireguard` is enabled
+- optional NTSync patching when `ntsync` is enabled
 - optional general optimization patches gated by `optimization_patches`
 - Unicode bypass fix when `unicode` is enabled
 - IPv6 NAT related patching
@@ -257,6 +275,7 @@ If `make_release` is enabled:
 - uploads ZIP artifacts to that release.
 
 Release notes are generated from built artifacts plus the matrix metadata, not from hand-written markdown.
+`SUSFS_BASE_VERSION` is now derived from the resolved SUSFS refs used in the run rather than kept as a fixed constant.
 
 ## User-Facing Project Claims
 
@@ -275,6 +294,7 @@ The README currently advertises support or integration for:
 - IP Set and IPv6 NAT support
 - TMPFS XATTR and POSIX ACL support
 - optional Unicode bypass fix
+- workflow-level optional Droidspaces / NTSync support that is currently disabled in the active OP13 config
 
 Keep README claims aligned with actual config flags and action behavior.
 
@@ -285,7 +305,7 @@ Keep README claims aligned with actual config flags and action behavior.
 - kernels are expected to work on stock ROMs,
 - current kernels are built from Android 15 manifests,
 - users should not reuse old ZIPs after a major Android OTA unless compatibility is confirmed,
-- non-OnePlus devices may work if kernel/KMI compatibility matches and verification-related protections are handled by the user.
+- anything outside OnePlus 13 on OOS16 should be treated as unsupported unless a release explicitly says otherwise.
 
 If you change manifests, supported devices, or kernel bases, update docs accordingly.
 
@@ -343,7 +363,7 @@ This means changes can sit unvalidated until someone explicitly triggers the wor
 - Builds depend on GitHub, GitLab, Google-hosted `repo`, OnePlusOSS, and CodeLinaro.
 - Manual-only workflow means regressions may not be caught quickly.
 - Patch application is intentionally tolerant but therefore fragile.
-- The Android-version filters exclude OOS14 when selecting `android*-*.*`.
+- Auxiliary maintenance workflows still carry some multi-device heritage even though the build workflow itself is single-target.
 - Local documentation may drift from build reality if configs and action behavior change independently.
 
 ## Best Starting Points by Task Type
@@ -358,7 +378,7 @@ This means changes can sit unvalidated until someone explicitly triggers the wor
 Check these in order:
 
 1. Was the correct JSON config selected in the matrix?
-2. Did `op_model` filtering exclude the expected device family?
+2. Did the single-target filter still include `OP13` on `OOS16`?
 3. Does the config point to the correct manifest and branch?
 4. If `branch` is `wild/*`, does the local manifest file exist in the correct `manifests/<oos>/` directory?
 5. Did an external clone or `repo sync` fail?
