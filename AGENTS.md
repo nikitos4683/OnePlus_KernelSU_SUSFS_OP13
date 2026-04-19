@@ -28,7 +28,7 @@ If you are debugging or extending this repo, always remember that many failures 
 - `manifests/`: the active local XML manifest is `manifests/oos16/oneplus_13_w.xml`. Legacy OS folders may still exist as empty directories after cleanup.
 - `.github/workflows/build-kernel-release.yml`: main entry point, manual-only workflow, matrix generation, optional release creation.
 - `.github/workflows/clean-up.yml`: maintenance workflow for cache and workflow-run cleanup.
-- `.github/workflows/oplus-kernel-monitor.yml`: optional upstream OnePlusOSS tracker that updates the `status-page` branch.
+- `.github/workflows/oplus-kernel-monitor.yml`: optional upstream OnePlusOSS tracker for the active OP13 target that updates the `status-page` branch.
 - `.github/actions/action.yml`: composite action with the real build logic, validation, sync, patching, build, validation, and packaging.
 - `README.md`: project overview, advertised features, install pointers, credits, and support links.
 - `compatibility.md`: device compatibility notes and flashing caveats.

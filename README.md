@@ -7,7 +7,7 @@
 [![KernelSU](https://img.shields.io/badge/KernelSU-Supported-1a7f37?style=for-the-badge&logo=android&logoColor=white)](https://kernelsu.org/)
 [![KernelSU-Next](https://img.shields.io/badge/KSU--Next-Integrated-1a7f37?style=for-the-badge&logo=github&logoColor=white)](https://kernelsu-next.github.io/webpage/)
 [![SUSFS](https://img.shields.io/badge/SUSFS-Enhanced-d97706?style=for-the-badge&logo=gitlab&logoColor=white)](https://gitlab.com/simonpunk/susfs4ksu)
-[![OnePlusOSS Tracking Status](https://img.shields.io/badge/OnePlusOSS--Tracker-active-green)](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md)
+[![OP13 Source Status](https://img.shields.io/badge/OP13--Source-active-84cc16?style=for-the-badge&logo=github&logoColor=white)](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md)
 
 ### 🚀 Powered by [WildKernels](https://github.com/WildKernels) | Branch: OOS16
 
@@ -45,14 +45,15 @@ Flashing a custom kernel is a choice you make for your device. While we strive f
 | 🩹 [Kernel Patches](https://github.com/WildKernels/kernel_patches) | Core patches used in the build process |
 | ⚡ [Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher) | Recommended tool for safe flashing |
 | 📱 [Compatibility Info](./compatibility.md) | Verify supported base versions |
-| 📊 [OnePlusOSS Tracking Dashboard](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md) | Upstream OnePlusOSS branch tracker |
+| 📊 [OnePlusOSS Tracking Dashboard](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md) | Upstream OP13 / OOS16 source tracker |
 
 ---
 
-## 📱 OnePlusOSS Repositories Tracking
+## 📱 OP13 Source Tracking
 
-- 📊 **Live Dashboard**: [OnePlus Repos Tracking & Changes](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md)
+- 📊 **Live Dashboard**: [OP13 source tracking & changes](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md)
 - ⏱️ **Update Frequency**: Every 2 hours (Automated)
+- 🎯 **Scope**: only the OnePlusOSS repositories and branches referenced by the active `OP13` / `OOS16` manifest
 ---
 
 ## ✨ Features

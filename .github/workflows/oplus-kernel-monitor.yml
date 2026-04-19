@@ -1,4 +1,4 @@
-name: OnePlusOSS Kernel Monitor
+name: OnePlus 13 Kernel Monitor
 
 on:
   schedule:
@@ -25,33 +25,79 @@ jobs:
         with:
           path: main
 
-      - name: Configure Blacklist
-        id: blacklist_config
+      - name: Resolve Tracking Scope
+        id: tracking_scope
         run: |
-          cat >> $GITHUB_ENV <<EOF
-          BLACKLIST_REPOS<<BLOCK
-          android_kernel_oneplus_one
-          android_kernel_oneplus_msm8974
-          android_kernel_oneplus_msm8994
-          android_kernel_oneplus_msm8996
-          android_kernel_oneplus_msm8998
-          android_kernel_oneplus_sm6350
-          android_kernel_oneplus_sm4250
-          android_kernel_oneplus_sm7250
-          android_kernel_oneplus_sdm845
-          android_kernel_oneplus_sm8150
-          android_kernel_4.19_oneplus_mt6765
-          android_kernel_oneplus_sm8250
-          android_kernel_oneplus_mt6893
-          android_kernel_oneplus_sm4350
-          android_kernel_msm-5.4_oneplus_sm6375
-          android_kernel_oneplus_mt6877
-          android_kernel_oneplus_sm7325
-          android_kernel_oneplus_sm8350
-          android_kernel_oneplus_sw5100
-          android_kernel_oneplus_sm7225
-          BLOCK
-          EOF
+          cd main
+
+          CONFIG_PATH="configs/oos16/OP13.json"
+          if [ ! -f "$CONFIG_PATH" ]; then
+            echo "::error::Expected target config not found: $CONFIG_PATH"
+            exit 1
+          fi
+
+          TARGET_MODEL=$(jq -r '.model' "$CONFIG_PATH")
+          TARGET_OS=$(jq -r '.os_version' "$CONFIG_PATH")
+          TARGET_BRANCH=$(jq -r '.branch' "$CONFIG_PATH")
+          TARGET_MANIFEST=$(jq -r '.manifest' "$CONFIG_PATH")
+
+          if [[ "$TARGET_BRANCH" != wild/* ]]; then
+            echo "::error::This monitor expects the active target to use a local wild/* manifest. Got: $TARGET_BRANCH"
+            exit 1
+          fi
+
+          MANIFEST_PATH="manifests/$(echo "$TARGET_OS" | tr '[:upper:]' '[:lower:]')/$TARGET_MANIFEST"
+          if [ ! -f "$MANIFEST_PATH" ]; then
+            echo "::error::Tracked manifest not found: $MANIFEST_PATH"
+            exit 1
+          fi
+
+          TARGETS_JSON=$(python3 - "$MANIFEST_PATH" <<'PY'
+import json
+import sys
+import xml.etree.ElementTree as ET
+
+manifest_path = sys.argv[1]
+root = ET.parse(manifest_path).getroot()
+targets = {}
+
+for project in root.findall("project"):
+    if project.get("remote") != "origin":
+        continue
+    name = project.get("name")
+    revision = project.get("revision")
+    if not name or not revision:
+        continue
+    targets.setdefault(name, [])
+    if revision not in targets[name]:
+        targets[name].append(revision)
+
+print(json.dumps(targets, separators=(",", ":")))
+PY
+          )
+
+          if [ "$TARGETS_JSON" = "{}" ]; then
+            echo "::error::No OnePlusOSS projects were found in $MANIFEST_PATH"
+            exit 1
+          fi
+
+          {
+            echo "target_model=$TARGET_MODEL"
+            echo "target_os=$TARGET_OS"
+            echo "manifest_path=$MANIFEST_PATH"
+            echo "targets_json<<EOF"
+            echo "$TARGETS_JSON"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### 📌 Tracking Scope"
+            echo "- Model: \`$TARGET_MODEL\`"
+            echo "- OS: \`$TARGET_OS\`"
+            echo "- Manifest: \`$MANIFEST_PATH\`"
+            echo "- Sources:"
+            jq -r 'to_entries[] | "- `\(.key)` @ `\(.value[] )`"' <<< "$TARGETS_JSON"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Prepare Persistence from Status Branch
         run: |
@@ -73,6 +119,14 @@ jobs:
           if [ ! -f "$STATE_FILE" ] || [ ! -s "$STATE_FILE" ]; then echo "{}" > "$STATE_FILE"; fi
           echo "{}" > new_state.json
 
+          TRACKED_TARGETS='${{ steps.tracking_scope.outputs.targets_json }}'
+          REPOS=$(jq -r 'keys[]' <<< "$TRACKED_TARGETS")
+
+          if [ -z "$REPOS" ]; then
+            echo "::error::No repositories resolved for the active tracking scope."
+            exit 1
+          fi
+
           NEW_REPOS=""
           NEW_BRANCHES=""
           UPDATED_BRANCHES=""
@@ -80,32 +134,31 @@ jobs:
           CHANGES_DETECTED="false"
 
           # Desktop Summary Table Header
-          echo "### 📊 Branch Status & Kernel Versions" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Branch Status & Kernel Versions (${{ steps.tracking_scope.outputs.target_model }} / ${{ steps.tracking_scope.outputs.target_os }})" >> $GITHUB_STEP_SUMMARY
           echo "| Repo | Branch | Latest Commit | Kernel | Status |" >> $GITHUB_STEP_SUMMARY
           echo "| :--- | :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
 
           # Initialize README Buffer
-          echo "### 📓 Kernel Manifests Report" > ../manifest_summary.md
-          echo "### 🛠 Kernel Trees Report" > ../local_summary.md
+          echo "### 📓 ${{ steps.tracking_scope.outputs.target_model }} Manifest Sources" > ../manifest_summary.md
+          echo "### 🛠 ${{ steps.tracking_scope.outputs.target_model }} Kernel Sources" > ../local_summary.md
 
-          # Auto filter repos: Ignore Repos not related to android_kernel and ignore android_kernel_modules or any modules or techpack
-          REPOS=$(gh repo list $ORG --limit 1000 --json name --jq '.[] | select((.name | startswith("android_kernel_") or . == "kernel_manifest") and (.name | contains("modules") or contains("techpack") | not)) | .name')
-
-          echo "🔍 Found $(echo "$REPOS" | wc -w) repositories to scan."
+          echo "🔍 Tracking $(printf '%s\n' "$REPOS" | sed '/^$/d' | wc -l) repositories for ${{ steps.tracking_scope.outputs.target_model }}."
 
           for repo in $REPOS; do
-            # Check against multiline blacklist
-            if echo "$BLACKLIST_REPOS" | grep -qxw "$repo"; then
-              echo "🚫 Skipping blacklisted repo: $repo"
+            echo "📂 Processing: $repo"
+            TRACKED_BRANCHES=$(jq -r --arg repo "$repo" '.[$repo][]' <<< "$TRACKED_TARGETS")
+
+            if [ -z "$TRACKED_BRANCHES" ]; then
+              echo "⚠️ No tracked branches configured for $repo. Skipping."
               continue
             fi
-
-            echo "📂 Processing: $repo"
 
             if ! jq -e ".\"$repo\"" "$STATE_FILE" > /dev/null; then
                NEW_REPOS+="- 🆕 $repo\n"
                CHANGES_DETECTED="true"
             fi
+
+            jq --arg repo "$repo" '.[$repo] //= {}' new_state.json > tmp.json && mv tmp.json new_state.json
 
             QUERY='query($name: String!, $owner: String!) {
               repository(name: $name, owner: $owner) {
@@ -163,12 +216,18 @@ jobs:
             done
 
             if [ ! -z "$BRANCH_DATA" ]; then
+              MATCHED_TRACKED_BRANCH="false"
               echo "<details><summary><b>$repo</b></summary>" >> "$TARGET_BUF"
               echo "" >> "$TARGET_BUF"
 
               while read -r row; do
                 [ -z "$row" ] && continue
                 BRANCH_NAME=$(echo "$row" | jq -r '.name')
+                if ! grep -qxF "$BRANCH_NAME" <<< "$TRACKED_BRANCHES"; then
+                  continue
+                fi
+
+                MATCHED_TRACKED_BRANCH="true"
                 SHA=$(echo "$row" | jq -r '.target.oid')
                 MSG=$(echo "$row" | jq -r '.target.message' | head -n 1 | cut -c1-200 | sed 's/[|`]/ /g')
 
@@ -281,6 +340,10 @@ jobs:
                 jq --arg repo "$repo" --arg branch "$BRANCH_NAME" --arg val "$CURRENT_VAL" '.[$repo][$branch] = $val' new_state.json > tmp.json && mv tmp.json new_state.json
               done <<< "$BRANCH_DATA"
 
+              if [ "$MATCHED_TRACKED_BRANCH" != "true" ]; then
+                echo "_No tracked branches were returned for this repository in the current scan._" >> "$TARGET_BUF"
+              fi
+
               echo "</details>" >> "$TARGET_BUF"
             else
               # 🛑 API returned no branches. Let's verify why.
@@ -332,7 +395,7 @@ jobs:
         if: steps.scanner.outputs.changes_found == 'true'
         run: |
           gh label create "notification" --color "BFD4F2" --repo ${{ github.repository }} --force || true
-          DATE_TITLE="Kernel Updates - $(date +'%Y-%m-%d')"
+          DATE_TITLE="${{ steps.tracking_scope.outputs.target_model }} Kernel Updates - $(date +'%Y-%m-%d')"
           ISSUE_NUMBER=$(gh issue list --repo ${{ github.repository }} --label "notification" --state "open" --search "$DATE_TITLE" --json number --jq '.[0].number')
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
@@ -343,10 +406,10 @@ jobs:
           fi
 
           if [ -z "$ISSUE_NUMBER" ]; then
-            BODY=$(printf "Hi $TARGET,\n\nTracker for today.\n\n${{ steps.scanner.outputs.log_content }}\n\n---\n🔗 [View Action Summary]($RUN_URL)")
+            BODY=$(printf "Hi $TARGET,\n\nTracker for ${{ steps.tracking_scope.outputs.target_model }} / ${{ steps.tracking_scope.outputs.target_os }} sources.\n\n${{ steps.scanner.outputs.log_content }}\n\n---\n🔗 [View Action Summary]($RUN_URL)")
             gh issue create --repo ${{ github.repository }} --title "$DATE_TITLE" --body "$BODY" --label "notification"
           else
-            BODY=$(printf "### 🔄 New Activity Detected ($(date -u +'%H:%M') UTC)\n\n${{ steps.scanner.outputs.log_content }}\n\n---\n🔗 [View Action Summary]($RUN_URL)")
+            BODY=$(printf "### 🔄 New Activity Detected for ${{ steps.tracking_scope.outputs.target_model }} ($(date -u +'%H:%M') UTC)\n\n${{ steps.scanner.outputs.log_content }}\n\n---\n🔗 [View Action Summary]($RUN_URL)")
             gh issue comment $ISSUE_NUMBER --repo ${{ github.repository }} --body "$BODY"
           fi
 
@@ -362,9 +425,15 @@ jobs:
           else
             git checkout --orphan status-page && git rm -rf .
           fi
-          echo "# 📱 OnePlusOSS Kernel Tracker" > README.md
+          echo "# 📱 OnePlus 13 Kernel Tracker" > README.md
+          echo "> **Scope:** ${{ steps.tracking_scope.outputs.target_model }} / ${{ steps.tracking_scope.outputs.target_os }}" >> README.md
+          echo "> **Manifest:** \`${{ steps.tracking_scope.outputs.manifest_path }}\`" >> README.md
           echo "> **Last Update:** $(date -u) (UTC)" >> README.md
-          echo "Daily automated report for OnePlus Kernel branches." >> README.md
+          echo "Automated report for the tracked OnePlusOSS sources used by this repository." >> README.md
+          echo "" >> README.md
+          echo "## 🎯 Tracked Sources" >> README.md
+          jq -r 'to_entries[] | "- `\(.key)` @ `\(.value[] )`"' <<< '${{ steps.tracking_scope.outputs.targets_json }}' >> README.md
+          echo "" >> README.md
           cat ../manifest_summary.md >> README.md
           echo -e "\n" >> README.md
           cat ../local_summary.md >> README.md
