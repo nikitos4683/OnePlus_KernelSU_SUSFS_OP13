@@ -127,6 +127,24 @@ jobs:
             exit 1
           fi
 
+          if ! jq empty "$STATE_FILE" > /dev/null 2>&1; then
+            echo "⚠️ Stored tracker state is invalid JSON. Resetting it."
+            echo "{}" > "$STATE_FILE"
+          fi
+
+          echo "{}" > scoped_state.json
+          while read -r scoped_repo; do
+            [ -z "$scoped_repo" ] && continue
+            while read -r scoped_branch; do
+              [ -z "$scoped_branch" ] && continue
+              SCOPED_OLD_VAL=$(jq -r ".\"$scoped_repo\".\"$scoped_branch\" // empty" "$STATE_FILE")
+              if [ -n "$SCOPED_OLD_VAL" ]; then
+                jq --arg repo "$scoped_repo" --arg branch "$scoped_branch" --arg val "$SCOPED_OLD_VAL" '.[$repo][$branch] = $val' scoped_state.json > tmp.json && mv tmp.json scoped_state.json
+              fi
+            done <<< "$(jq -r --arg repo "$scoped_repo" '.[$repo][]' <<< "$TRACKED_TARGETS")"
+          done <<< "$REPOS"
+          mv scoped_state.json "$STATE_FILE"
+
           NEW_REPOS=""
           NEW_BRANCHES=""
           UPDATED_BRANCHES=""
