@@ -160,7 +160,7 @@ jobs:
 
             jq --arg repo "$repo" '.[$repo] //= {}' new_state.json > tmp.json && mv tmp.json new_state.json
 
-            QUERY='query($name: String!, $owner: String!) {
+            KERNEL_TREE_QUERY='query($name: String!, $owner: String!) {
               repository(name: $name, owner: $owner) {
                 refs(refPrefix: "refs/heads/", first: 100, orderBy: {field: TAG_COMMIT_DATE, direction: DESC}) {
                   nodes {
@@ -174,6 +174,22 @@ jobs:
                             object { ... on Blob { text } }
                           }
                         }
+                      }
+                    }
+                  }
+                }
+              }
+            }'
+
+            KERNEL_TREE_METADATA_QUERY='query($name: String!, $owner: String!) {
+              repository(name: $name, owner: $owner) {
+                refs(refPrefix: "refs/heads/", first: 100, orderBy: {field: TAG_COMMIT_DATE, direction: DESC}) {
+                  nodes {
+                    name
+                    target {
+                      ... on Commit {
+                        oid
+                        message
                       }
                     }
                   }
@@ -203,8 +219,16 @@ jobs:
               }
             }'
 
-            [ "$repo" == "kernel_manifest" ] && ACTIVE_QUERY="$KERNEL_MANIFEST_QUERY" || ACTIVE_QUERY="$QUERY"
-            [ "$repo" == "kernel_manifest" ] && TARGET_BUF="../manifest_summary.md" || TARGET_BUF="../local_summary.md"
+            if [ "$repo" == "kernel_manifest" ]; then
+              ACTIVE_QUERY="$KERNEL_MANIFEST_QUERY"
+              TARGET_BUF="../manifest_summary.md"
+            elif [[ "$repo" == android_kernel_common_* ]]; then
+              ACTIVE_QUERY="$KERNEL_TREE_QUERY"
+              TARGET_BUF="../local_summary.md"
+            else
+              ACTIVE_QUERY="$KERNEL_TREE_METADATA_QUERY"
+              TARGET_BUF="../local_summary.md"
+            fi
 
             RETRY_COUNT=0; MAX_RETRIES=3; BRANCH_DATA=""
             until [ $RETRY_COUNT -ge $MAX_RETRIES ]; do
