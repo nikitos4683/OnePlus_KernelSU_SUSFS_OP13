@@ -53,27 +53,27 @@ jobs:
           fi
 
           TARGETS_JSON=$(python3 - "$MANIFEST_PATH" <<'PY'
-import json
-import sys
-import xml.etree.ElementTree as ET
+          import json
+          import sys
+          import xml.etree.ElementTree as ET
 
-manifest_path = sys.argv[1]
-root = ET.parse(manifest_path).getroot()
-targets = {}
+          manifest_path = sys.argv[1]
+          root = ET.parse(manifest_path).getroot()
+          targets = {}
 
-for project in root.findall("project"):
-    if project.get("remote") != "origin":
-        continue
-    name = project.get("name")
-    revision = project.get("revision")
-    if not name or not revision:
-        continue
-    targets.setdefault(name, [])
-    if revision not in targets[name]:
-        targets[name].append(revision)
+          for project in root.findall("project"):
+              if project.get("remote") != "origin":
+                  continue
+              name = project.get("name")
+              revision = project.get("revision")
+              if not name or not revision:
+                  continue
+              targets.setdefault(name, [])
+              if revision not in targets[name]:
+                  targets[name].append(revision)
 
-print(json.dumps(targets, separators=(",", ":")))
-PY
+          print(json.dumps(targets, separators=(",", ":")))
+          PY
           )
 
           if [ "$TARGETS_JSON" = "{}" ]; then
