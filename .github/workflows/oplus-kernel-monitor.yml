@@ -16,6 +16,7 @@ jobs:
     env:
       ORG: "OnePlusOSS"
       STATE_FILE: "old_state.json"
+      UPSTREAM_STATUS_REPO: "WildKernels/OnePlus_KernelSU_SUSFS"
       GH_TOKEN: ${{ github.token }}
       GH_HTTP_TIMEOUT: 600
 
@@ -462,11 +463,19 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} status_repo_final
           cd status_repo_final
-          if git ls-remote --exit-code --heads origin status-page; then
-            git fetch origin status-page && git checkout status-page
+          git fetch origin status-page || true
+          git remote add upstream "https://github.com/${{ env.UPSTREAM_STATUS_REPO }}.git" 2>/dev/null || \
+            git remote set-url upstream "https://github.com/${{ env.UPSTREAM_STATUS_REPO }}.git"
+          git fetch upstream status-page || true
+
+          if git show-ref --verify --quiet refs/remotes/upstream/status-page; then
+            git checkout -B status-page upstream/status-page
+          elif git show-ref --verify --quiet refs/remotes/origin/status-page; then
+            git checkout -B status-page origin/status-page
           else
-            git checkout --orphan status-page && git rm -rf .
+            git checkout --orphan status-page
           fi
+          git rm -rf . || true
           echo "# 📱 OnePlus 13 Kernel Tracker" > README.md
           echo "> **Scope:** ${{ steps.tracking_scope.outputs.target_model }} / ${{ steps.tracking_scope.outputs.target_os }}" >> README.md
           echo "> **Manifest:** \`${{ steps.tracking_scope.outputs.manifest_path }}\`" >> README.md
@@ -481,6 +490,30 @@ jobs:
           cat ../local_summary.md >> README.md
 
           cp "../main/${{ env.STATE_FILE }}" .
-          git add README.md "${{ env.STATE_FILE }}"
+          git add -A
 
-          git diff --staged --quiet || (git commit -m "docs: sync kernel status [skip ci]" && git push origin status-page)
+          TARGET_TREE=$(git write-tree)
+          BASE_COMMIT=$(git rev-parse -q --verify HEAD 2>/dev/null || true)
+          CURRENT_HEAD=""
+          CURRENT_TREE=""
+          CURRENT_PARENT=""
+
+          if git show-ref --verify --quiet refs/remotes/origin/status-page; then
+            CURRENT_HEAD=$(git rev-parse origin/status-page)
+            CURRENT_TREE=$(git rev-parse origin/status-page^{tree})
+            CURRENT_PARENT=$(git rev-list --parents -n 1 origin/status-page | awk '{print $2}')
+          fi
+
+          if [ "$TARGET_TREE" = "$CURRENT_TREE" ]; then
+            if [ "$BASE_COMMIT" = "$CURRENT_HEAD" ] || [ "$BASE_COMMIT" = "$CURRENT_PARENT" ]; then
+              echo "✅ status-page already matches the generated snapshot and upstream base."
+              exit 0
+            fi
+          fi
+
+          git commit -m "docs: sync kernel status [skip ci]"
+          if git show-ref --verify --quiet refs/remotes/origin/status-page; then
+            git push --force-with-lease origin HEAD:status-page
+          else
+            git push origin HEAD:status-page
+          fi
