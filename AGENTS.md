@@ -29,7 +29,8 @@ If you are debugging or extending this repo, always remember that many failures 
 - `.github/workflows/build-kernel-release.yml`: main entry point, manual-only workflow, matrix generation, optional release creation.
 - `.github/workflows/clean-up.yml`: maintenance workflow for cache and workflow-run cleanup.
 - `.github/workflows/oplus-kernel-monitor.yml`: optional upstream OnePlusOSS tracker for the active OP13 target that updates the `status-page` branch.
-- `.github/actions/action.yml`: composite action with the real build logic, validation, sync, patching, build, validation, and packaging.
+- `.github/actions/build-kernel/action.yml`: composite action with the real build logic, validation, patching, build, validation, and packaging.
+- `.github/actions/kernel-source-sync/action.yml`: composite action used by the build action to download and unpack manifest projects and cached toolchains.
 - `README.md`: project overview, advertised features, install pointers, credits, and support links.
 - `compatibility.md`: device compatibility notes and flashing caveats.
 
@@ -66,6 +67,7 @@ Each file in `configs/**/*.json` currently uses this key set:
 - `zyc_compiler`
 - `c_compiler`
 - `rust_compiler`
+- `bindgen`
 - `rust_build`
 - `disk_cleanup`
 - `hmbird`
@@ -94,6 +96,7 @@ Field meaning:
 - `zyc_compiler`: optional external clang tarball URL. Empty string keeps default toolchain selection.
 - `c_compiler`: optional in-tree clang path override.
 - `rust_compiler`: optional in-tree rust toolchain path override.
+- `bindgen`: optional in-tree bindgen path override. Empty string lets the action auto-detect a prebuilt bindgen or install one for rust builds.
 - `rust_build`: whether bindgen/rust tooling is needed.
 - `disk_cleanup`: whether the CI runner should free extra disk space before build.
 - `hmbird`, `susfs`, `ds`, `bbg`, `bbr`, `ttl`, `ip_set`, `wireguard`, `unicode`, `ntsync`, `optimization_patches`: feature toggles that influence patching and config mutation.
@@ -111,9 +114,10 @@ Example observed config:
   "kernel_version": "6.6",
   "os_version": "OOS16",
   "lto": "thin",
-  "zyc_compiler": "",
-  "c_compiler": "",
+  "zyc_compiler": "https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240723-release/Clang-19.0.0git-20240723.tar.gz",
+  "c_compiler": "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin",
   "rust_compiler": "",
+  "bindgen": "",
   "rust_build": false,
   "disk_cleanup": false,
   "hmbird": true,
@@ -168,9 +172,9 @@ Important workflow behavior:
 - Each device config is multiplied by each KSU option, producing one matrix row per combination.
 - The workflow input surface is intentionally reduced to the OnePlus 13 OOS16 path only, even though some shared helper logic still computes generic GKI metadata.
 
-## Composite Action: action.yml
+## Composite Action: build-kernel/action.yml
 
-The composite action is the real system of record for build behavior.
+The build-kernel composite action is the real system of record for build behavior.
 
 High-level flow:
 
@@ -178,7 +182,7 @@ High-level flow:
 2. Validate every important field.
 3. Optionally install `bindgen` if `rust_build` is enabled.
 4. Install or locate the `repo` tool.
-5. Initialize and sync the external kernel source tree.
+5. Download and unpack the external kernel source tree via `kernel-source-sync`.
 6. Set directory paths for artifacts and dependencies.
 7. Read the real kernel version from synced source files.
 8. Detect clang and optional rust toolchains from prebuilts.
@@ -205,11 +209,11 @@ KernelSU integration is fetched via remote setup scripts:
 - KernelSU-Next setup script from `KernelSU-Next/KernelSU-Next`
 - KernelSU setup script from `tiann/KernelSU`
 
-The repo tool itself is fetched from:
+The legacy repo tool setup still fetches from:
 
 - `https://storage.googleapis.com/git-repo-downloads/repo`
 
-This repo is therefore highly dependent on external network availability and upstream stability.
+Kernel source sync currently uses `.github/actions/kernel-source-sync/action.yml` to download manifest project archives and cached toolchain tarballs, so this repo is highly dependent on external network availability, GitHub release assets, and upstream stability.
 
 ## Patch and Feature Logic
 
@@ -233,7 +237,7 @@ Many patch applications use `patch -p1 --forward` with fuzz or tolerant behavior
 - a patch may partially stop applying after an upstream change,
 - build breakage may appear suddenly without any change in this repo.
 
-Treat `.github/actions/action.yml` as high-blast-radius code.
+Treat `.github/actions/build-kernel/action.yml` and `.github/actions/kernel-source-sync/action.yml` as high-blast-radius code.
 
 ## Build Output and Validation
 
@@ -321,12 +325,12 @@ If you change manifests, supported devices, or kernel bases, update docs accordi
 ### Change Build Features Across Devices
 
 - For per-device feature defaults, edit JSON config flags.
-- For shared patch logic or config mutation, edit `.github/actions/action.yml`.
+- For shared patch logic or config mutation, edit `.github/actions/build-kernel/action.yml`.
 - For changes that affect release notes or matrix generation, edit `.github/workflows/build-kernel-release.yml`.
 
 ### Change Packaging or Artifact Naming
 
-- Update `.github/actions/action.yml`.
+- Update `.github/actions/build-kernel/action.yml`.
 - Review release-note parsing logic in `.github/workflows/build-kernel-release.yml`, because it parses ZIP filenames.
 
 ### Change Release Behavior
@@ -341,7 +345,7 @@ If you change manifests, supported devices, or kernel bases, update docs accordi
 - Keep JSON and manifest naming aligned.
 - If you change a `wild/*` config, verify the referenced manifest exists in the matching `manifests/<oos>/` folder.
 - If you change ZIP naming, also update any code that parses artifact names later in the workflow.
-- If you touch `.github/actions/action.yml`, assume all devices may be affected.
+- If you touch `.github/actions/build-kernel/action.yml` or `.github/actions/kernel-source-sync/action.yml`, assume all devices may be affected.
 - If a failure appears during patching or compile, consider whether the real issue is in an upstream source revision, not in this repo.
 
 ## Validation Reality
@@ -369,7 +373,7 @@ This means changes can sit unvalidated until someone explicitly triggers the wor
 ## Best Starting Points by Task Type
 
 - Add or fix device support: start in `configs/` and `manifests/`.
-- Change kernel features, patch flow, packaging, or validation: start in `.github/actions/action.yml`.
+- Change kernel features, patch flow, packaging, or validation: start in `.github/actions/build-kernel/action.yml`.
 - Change matrix generation, workflow inputs, or release behavior: start in `.github/workflows/build-kernel-release.yml`.
 - Update public-facing support expectations: review `README.md` and `compatibility.md`.
 
@@ -381,7 +385,7 @@ Check these in order:
 2. Did the single-target filter still include `OP13` on `OOS16`?
 3. Does the config point to the correct manifest and branch?
 4. If `branch` is `wild/*`, does the local manifest file exist in the correct `manifests/<oos>/` directory?
-5. Did an external clone or `repo sync` fail?
+5. Did an external clone, archive download, toolchain cache download, or source sync fail?
 6. Did a SUSFS or other patch stop applying cleanly?
 7. Did `.config` mutation produce an invalid kernel configuration?
 8. Did artifact naming or release-note parsing break after a naming change?

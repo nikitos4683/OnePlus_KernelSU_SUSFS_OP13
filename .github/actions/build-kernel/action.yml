@@ -35,8 +35,16 @@ inputs:
   clean:
     description: 'Force clean build without ccache acceleration'
     required: false
-    type: string
-    default: 'false'
+    type: boolean
+    default: false
+  debug:
+    description: 'Enable dumping debug related artifacts'
+    required: false
+    type: boolean
+    default: false
+  github_token:
+    description: 'GitHub Token'
+    required: true
 
 outputs:
   kernel_version:
@@ -115,6 +123,7 @@ runs:
         c_compiler="$OP_C_COMPILER"
         rust_compiler="$OP_RUST_COMPILER"
         zyc_compiler="$OP_ZYC_COMPILER"
+        bindgen="$OP_BINDGEN"
         ds="$OP_DS"
         ntsync="$OP_NTSYNC"
         optimize='${{ inputs.optimize_level }}'
@@ -253,6 +262,8 @@ runs:
 
         # OP_ZYC_COMPILER currently has no checks!
 
+        # OP_BINDGEN currently has no checks!
+
         if [[ -z "$ds" ]]; then
           errors+=("Input 'ds' cannot be empty")
         elif [[ "$ds" != "true" && "$ds" != "false" ]]; then
@@ -282,31 +293,13 @@ runs:
         fi
         echo "::endgroup::"
 
-    - name: Install bindgen only (no rustc)
-      shell: bash
-      if: ${{ env.OP_RUST_BUILD == 'true' }}
-      run: |
-        # Install bindgen via cargo (no full rustc needed)
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
-        source $HOME/.cargo/env
-
-        # Install bindgen CLI only (~50-100MB total)
-        cargo install bindgen-cli --version 0.69.5
-
-        # Verify
-        bindgen --version
-        which bindgen
-
-    - name: Show bindgen version
-      shell: bash
-      if: ${{ env.OP_RUST_BUILD == 'true' }}
-      run: bindgen --version
-
     - name: Setup Base Environment
       shell: bash
       run: |
         set -euo pipefail
         CONFIG="$OP_MODEL"
+        echo "Creating folder for configuration: $CONFIG"
+        mkdir -p "$CONFIG"
         echo "CONFIG=$CONFIG" >> "$GITHUB_ENV"
         REPO="/usr/local/bin/repo"
         if [ ! -x "$REPO" ]; then
@@ -323,42 +316,13 @@ runs:
         git config --global core.fsmonitor true
         git config --global pack.sparse true
 
-    - name: Initialize and Sync Kernel Source
-      shell: bash
-      run: |
-        set -euo pipefail
-        echo "::group::Initialize kernel source"
-        echo "Creating folder for configuration: $CONFIG"
-        mkdir -p "$CONFIG"
-        cd "$CONFIG"
-        echo "Initializing and syncing kernel source..."
-
-        if [[ "$OP_MANIFEST" == https://* ]]; then
-          mkdir -p .repo/manifests
-          curl --fail --show-error --location --proto '=https' "$OP_MANIFEST" -o .repo/manifests/temp_manifest.xml
-          "$REPO" init -u https://github.com/OnePlusOSS/kernel_manifest.git -b "oneplus/sm8650" -m temp_manifest.xml --repo-rev=v2.16 --depth=1 --no-clone-bundle --no-tags
-        elif [[ "$OP_BRANCH" == wild/* ]]; then
-          mkdir -p .repo/manifests
-          cp "../manifests/$(echo "$OP_OS_VERSION" | tr '[:upper:]' '[:lower:]')/$OP_MANIFEST" .repo/manifests/temp_manifest.xml
-          "$REPO" init -u https://github.com/OnePlusOSS/kernel_manifest.git -b "oneplus/sm8650" -m temp_manifest.xml --repo-rev=v2.16 --depth=1 --no-clone-bundle --no-tags
-        else
-          "$REPO" init -u https://github.com/OnePlusOSS/kernel_manifest.git -b "$OP_BRANCH" -m "$OP_MANIFEST" --repo-rev=v2.16 --depth=1 --no-clone-bundle --no-tags
-        fi
-
-        "$REPO" --version
-        success=false
-        for i in 1 2 3; do
-          if "$REPO" sync -c --no-clone-bundle --no-tags --optimized-fetch \
-             -j"$(nproc --all)" --fail-fast; then
-            success=true
-            break
-          fi
-          echo "⚠️ repo sync attempt $i failed; retrying..."
-          sleep 30
-        done
-        $success || { echo "::error::repo sync failed after 3 attempts"; exit 1; }
-        echo "✅ Kernel source synced"
-        echo "::endgroup::"
+    - name: Sync Kernel Source
+      id: sync-kernel-source
+      uses: ./.github/actions/kernel-source-sync
+      with:
+        source_location: ${{ env.CONFIG }}
+        github_token: ${{ inputs.github_token }}
+        debug: ${{ inputs.debug }}
 
     - name: Set Dir Paths
       shell: bash
@@ -370,11 +334,13 @@ runs:
         COMMON_KERNEL_DIR="$KERNEL_PLATFORM_DIR/common"
         MSM_KERNEL_DIR="$KERNEL_PLATFORM_DIR/msm-kernel"
         AK3_DIR="$GITHUB_WORKSPACE/AnyKernel3"
+        DEBUG_ARTIFACTS_DIR="$GITHUB_WORKSPACE/debug_artifacts"
         KERNEL_PATCHES_DIR="$GITHUB_WORKSPACE/kernel_patches"
         SUSFS_DIR="$GITHUB_WORKSPACE/susfs4ksu"
         KSU_DIR="$KERNEL_PLATFORM_DIR/KernelSU"
         KSUN_DIR="$KERNEL_PLATFORM_DIR/KernelSU-Next"
         mkdir -p "$ARTIFACTS_DIR"
+        mkdir -p "$DEBUG_ARTIFACTS_DIR"
 
         # Save to environment for later steps
         echo "CONFIG_FOLDER=$CONFIG_DIR" >> "$GITHUB_ENV"
@@ -383,10 +349,14 @@ runs:
         echo "COMMON_KERNEL_FOLDER=$COMMON_KERNEL_DIR" >> "$GITHUB_ENV"
         echo "MSM_KERNEL_FOLDER=$MSM_KERNEL_DIR" >> "$GITHUB_ENV"
         echo "AK3_FOLDER=$AK3_DIR" >> "$GITHUB_ENV"
+        echo "DEBUG_ARTIFACTS_FOLDER=$DEBUG_ARTIFACTS_DIR" >> "$GITHUB_ENV"
         echo "KERNEL_PATCHES_FOLDER=$KERNEL_PATCHES_DIR" >> "$GITHUB_ENV"
         echo "SUSFS_FOLDER=$SUSFS_DIR" >> "$GITHUB_ENV"
         echo "KSU_FOLDER=$KSU_DIR" >> "$GITHUB_ENV"
         echo "KSUN_FOLDER=$KSUN_DIR" >> "$GITHUB_ENV"
+
+        DEBUG_ZIP_NAME="debug_${OP_MODEL}_${OP_OS_VERSION}.zip"
+        echo "DEBUG_ZIP_NAME=$DEBUG_ZIP_NAME" >> "$GITHUB_ENV"
 
     - name: Get Kernel Version Info
       shell: bash
@@ -462,6 +432,7 @@ runs:
     - name: Check or Detect Clang
       shell: bash
       run: |
+        # Check or Detect Clang
         set -euo pipefail
         echo "::group::Detect Clang"
         CLANG_FOUND=false
@@ -577,13 +548,15 @@ runs:
         echo "✅ Detected Clang: $CLANG_VERSION"
         echo "::endgroup::"
 
-    - name: Check or Detect Rust
+    - name: Check or Detect Rust & bindgen
       shell: bash
       if: ${{ env.OP_RUST_BUILD == 'true' }}
       run: |
+        # Check or Detect Rust & bindgen
         set -euo pipefail
-        echo "::group::Detect Rust"
+        echo "::group::Detect Rust & bindgen"
         RUSTC_FOUND=false
+        BINDGEN_FOUND=false
 
         if [ -z "$OP_RUST_COMPILER" ]; then
           for base in "$KERNEL_PLATFORM_FOLDER/prebuilts" "$KERNEL_PLATFORM_FOLDER/prebuilts-master"; do
@@ -602,39 +575,61 @@ runs:
           fi
         fi
 
+        if [ -z "$OP_BINDGEN" ]; then
+          for base in "$KERNEL_PLATFORM_FOLDER/prebuilts" "$KERNEL_PLATFORM_FOLDER/prebuilts-master"; do
+            [ -d "$base/clang-tools/linux-x86" ] || continue
+            if [ -x "$base/clang-tools/linux-x86/bin/bindgen" ]; then
+              BINDGEN_BIN="$base/clang-tools/linux-x86/bin"
+              BINDGEN_FOUND=true
+              chmod +x "$base/clang-tools/linux-x86/bin/bindgen"
+              break
+            fi
+          done
+        else
+          if [ -x "$CONFIG_FOLDER/$OP_BINDGEN/bindgen" ]; then
+            BINDGEN_BIN="$CONFIG_FOLDER/$OP_BINDGEN"
+            BINDGEN_FOUND=true
+            chmod +x "$CONFIG_FOLDER/$OP_BINDGEN/bindgen"
+          fi
+        fi
+
         [ "$RUSTC_FOUND" = true ] || { echo "::error::No RUST toolchain found"; exit 1; }
+        [ "$BINDGEN_FOUND" = true ] || { echo "::warning::No bindgen found"; }
 
         echo "RUSTC_BIN_PATH=$RUSTC_BIN" >> "$GITHUB_ENV"
         RUSTC_VERSION="$("$RUSTC_BIN/rustc" --version | head -n1)"
         echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
         echo "✅ Detected RUSTC: $RUSTC_VERSION"
+        if [ "$BINDGEN_FOUND" = true ]; then
+          echo "BINDGEN_BIN_PATH=$BINDGEN_BIN" >> "$GITHUB_ENV"
+          BINDGEN_VERSION="$("$BINDGEN_BIN/bindgen" --version | head -n1)"
+          echo "BINDGEN_VERSION=$BINDGEN_VERSION" >> "$GITHUB_ENV"
+          echo "✅ Detected BINDGEN: $BINDGEN_VERSION"
+        fi
 
         echo "::endgroup::"
 
-    - name: Set Cache Environment
+    - name: Install bindgen only (no rustc)
       shell: bash
+      if: ${{ env.OP_RUST_BUILD == 'true'  && !env.BINDGEN_BIN_PATH }}
       run: |
         set -euo pipefail
-        echo "::group::Configure ccache environment"
+        # Install bindgen via cargo (no full rustc needed)
+        echo "::group::Install bindgen only (no rustc)"
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
+        source $HOME/.cargo/env
 
-        CACHE_DIR="$HOME/.ccache"
-        echo "CCACHE_DIR=$CACHE_DIR" >> "$GITHUB_ENV"
-        echo "CCACHE_MAXSIZE=1G" >> "$GITHUB_ENV"
+        # Install bindgen CLI only (~50-100MB total)
+        cargo install bindgen-cli --version 0.69.5
 
-        mkdir -p "$CACHE_DIR"
-
-        echo "Cache configuration:"
-        echo "  Directory: $CACHE_DIR"
-        echo "  Max size: 1G"
-        echo "  Android: ${ANDROID_VER:-unknown}"
-        echo "  Kernel: ${KERNEL_VER:-unknown}"
-        echo "  OOS Version: ${OP_OS_VERSION:-unknown}"
-        echo "  Clang: ${CLANG_VERSION_SHORT:-unknown}"
-        echo "  Device: ${OP_MODEL:-unknown}"
+        # Verify
+        bindgen --version
+        which bindgen
         echo "::endgroup::"
 
     - name: Cache ccache
       uses: actions/cache@v5
+      if: ${{ inputs.clean == false || inputs.clean == 'false' }}
       with:
         path: ${{ env.CCACHE_DIR }}
         key: ccache-ksun-v3-${{ env.OP_MODEL }}-${{ env.OP_OS_VERSION }}-${{ env.KERNEL_FULL_VER }}-${{ env.CLANG_VERSION_SHORT }}
@@ -642,54 +637,14 @@ runs:
           ccache-ksun-v3-${{ env.OP_MODEL }}-${{ env.OP_OS_VERSION }}-${{ env.KERNEL_FULL_VER }}-
           ccache-ksun-v3-${{ env.OP_MODEL }}-${{ env.OP_OS_VERSION }}-
 
-    - name: Configure ccache
+    - name: Check ccache
       shell: bash
       run: |
+        echo "::group::Check ccache"
         set -euo pipefail
-        echo "::group::Configure ccache for maximum performance"
 
-        export CCACHE_DIR="$HOME/.ccache"
-        export CCACHE_MAXSIZE="1G"
-
-        ccache -M "$CCACHE_MAXSIZE"
-
-        export CCACHE_COMPILERCHECK="content"
-        export CCACHE_BASEDIR="${GITHUB_WORKSPACE}"
-        export CCACHE_NOHASHDIR="true"
-
-        ccache -o compression=true
-        ccache -o compression_level=3
-        ccache -o direct_mode=true
-        ccache -o hash_dir=false
-        ccache -o file_clone=true
-        ccache -o inode_cache=true
-        ccache -o umask=002
-
-        if ccache --help 2>&1 | grep -q 'depend_mode'; then
-          ccache -o depend_mode=true
-        fi
-
-        ccache -o sloppiness=file_macro,time_macros,include_file_mtime,include_file_ctime,pch_defines,system_headers,locale
-
-        export CCACHE_IGNOREOPTIONS="--sysroot*"
-
-        {
-          echo "CCACHE_COMPILERCHECK=content"
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}"
-          echo "CCACHE_NOHASHDIR=true"
-          echo "CCACHE_IGNOREOPTIONS=$CCACHE_IGNOREOPTIONS"
-        } >> "$GITHUB_ENV"
-
-        echo "✅ ccache configured for production"
-        echo ""
-        echo "Configuration applied:"
-        echo "  Max size: 12G (persisted)"
-        echo "  Base dir: ${GITHUB_WORKSPACE}"
-        echo "  Compression: zstd level 3"
-        echo "  Direct mode: enabled"
-        echo "  File cloning: enabled"
-        echo "  Inode cache: enabled"
-        echo ""
+        echo "Current ccache configuration:"
+        ccache -p
 
         if [ -d "$CCACHE_DIR" ] && find "$CCACHE_DIR" -type f -print -quit 2>/dev/null | grep -q .; then
           echo "✅ Restored cache found"
@@ -704,7 +659,7 @@ runs:
         echo "::endgroup::"
 
     - name: Handle Clean Build Option
-      if: ${{ inputs.clean == 'true' }}
+      if: ${{ inputs.clean == true || inputs.clean == 'true' }}
       shell: bash
       run: |
         set -euo pipefail
@@ -715,6 +670,15 @@ runs:
 
         echo "✅ ccache disabled for clean build (no cache/stat wipe)"
         echo "   Shared cache and statistics preserved for concurrent jobs"
+        echo "::endgroup::"
+
+    - name: Reset ccache stats
+      if: ${{ inputs.clean == false || inputs.clean == 'false' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "::group::Reset ccache stats"
+        ccache -z
         echo "::endgroup::"
 
     - name: Clone AnyKernel3 and Other Dependencies
@@ -1430,6 +1394,9 @@ runs:
 
         echo "Applying patch to enable SYSVIPC without breaking ABI"
         case "$OP_BRANCH" in
+          wild/sm8850|wild/sm8845)
+            patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/common/droidspaces/fix_sysvipc_kabi_a16-6.12.patch"
+            ;;
           wild/sm8550|wild/sm7550)
             patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/common/droidspaces/fix_sysvipc_kabi_1_2_3.patch"
             ;;
@@ -1708,7 +1675,21 @@ runs:
         BUILD_START=$(date +%s)
         set -o pipefail
 
-        make -j"$(nproc --all)" O="$OUT" KCFLAGS="$KCFLAGS" KCPPFLAGS="$KCPPFLAGS" Image 2>&1 | tee build.log
+        if [ "${{ inputs.debug }}" == "true" ]; then
+          make -j"$(nproc --all)" O="$OUT" KCFLAGS="$KCFLAGS" KCPPFLAGS="$KCPPFLAGS" Image modules 2>&1 | tee build.log
+          make -j"$(nproc --all)" O="$COMMON_KERNEL_FOLDER/out" KCFLAGS="$KCFLAGS" KCPPFLAGS="$KCPPFLAGS" INSTALL_MOD_PATH="$COMMON_KERNEL_FOLDER/out/install" modules_install 2>&1 | tee install.log
+
+          cp build.log "$DEBUG_ARTIFACTS_FOLDER/build.log"
+          cp install.log "$DEBUG_ARTIFACTS_FOLDER/install.log"
+          rsync -av --exclude='build' "$COMMON_KERNEL_FOLDER/out/install/lib/modules"/*/ "$DEBUG_ARTIFACTS_FOLDER"
+          cp "$COMMON_KERNEL_FOLDER/out/vmlinux" "$DEBUG_ARTIFACTS_FOLDER/vmlinux"
+          cp "$COMMON_KERNEL_FOLDER/out/Module.symvers" "$DEBUG_ARTIFACTS_FOLDER/Module.symvers"
+          cp "$COMMON_KERNEL_FOLDER/out/System.map" "$DEBUG_ARTIFACTS_FOLDER/System.map"
+
+          ls -la "$DEBUG_ARTIFACTS_FOLDER"
+        else
+          make -j"$(nproc --all)" O="$OUT" KCFLAGS="$KCFLAGS" KCPPFLAGS="$KCPPFLAGS" Image 2>&1 | tee build.log
+        fi
 
         BUILD_END=$(date +%s)
         BUILD_TIME=$((BUILD_END - BUILD_START))
@@ -1745,7 +1726,7 @@ runs:
 
     - name: 📊 ccache Post-Build Statistics
       id: ccache_stats
-      if: ${{ always() && inputs.clean != 'true' }}
+      if: ${{ success() && (inputs.clean == false || inputs.clean == 'false') }}
       shell: bash
       run: |
         set -euo pipefail
@@ -1966,13 +1947,15 @@ runs:
           echo "Native WireGuard: ${{ env.OP_WIREGUARD }}"
           echo "Unicode Fix: ${{ env.OP_UNICODE }}"
           echo "Optimization Patches: ${{ env.OP_OPTIMIZATION_PATCHES }}"
+          echo "NTSync: ${{ env.OP_NTSYNC }}"
+          echo "Droidspaces: ${{ env.OP_DS }}"
           echo ""
           echo "Image SHA256: ${{ steps.collect_stats.outputs.image_sha256 }}"
           echo "AnyKernel3 ZIP SHA256: ${{ steps.create_zip.outputs.zip_sha256 }}"
           echo "Compiler: ${CLANG_VERSION:-unknown}"
           echo "Warnings Count: ${{ steps.collect_stats.outputs.warnings_count }}"
           echo "Build Time: ${{ steps.collect_stats.outputs.build_time }}s"
-          if [ "${{ inputs.clean }}" != "true" ]; then
+          if [ "${{ inputs.clean }}" == "false" ]; then
             echo "ccache Hit Rate: ${{ steps.ccache_stats.outputs.hit_rate }}"
             echo "ccache Direct Rate: ${{ steps.ccache_stats.outputs.direct_rate }}"
           else
@@ -2032,6 +2015,8 @@ runs:
           echo "| **Native WireGuard** | ${{ env.OP_WIREGUARD }} |"
           echo "| **Unicode Fix** | ${{ env.OP_UNICODE }} |"
           echo "| **Optimization Patches** | ${{ env.OP_OPTIMIZATION_PATCHES }} |"
+          echo "| **NTSync** | ${{ env.OP_NTSYNC }} |"
+          echo "| **Droidspaces** | ${{ env.OP_DS }} |"
 
           echo ""
           echo "### 📊 Build Metrics"
@@ -2053,6 +2038,15 @@ runs:
           echo "| **Artifact Name** | \`${{ env.ZIP_NAME }}\` |"
           echo "| **AnyKernel3 SHA256** | \`${{ steps.create_zip.outputs.zip_sha256 }}\` |"
         } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload Debug Artifacts
+      if: ${{ always() && !cancelled() && inputs.debug }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.DEBUG_ZIP_NAME }}
+        path: ${{ env.DEBUG_ARTIFACTS_FOLDER }}
+        compression-level: 9
+        retention-days: 90
 
     - name: Upload Artifacts
       if: success() && steps.create_zip.conclusion == 'success'
