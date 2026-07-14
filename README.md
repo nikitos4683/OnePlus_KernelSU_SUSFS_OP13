@@ -62,7 +62,7 @@ Our build configurations are meticulously tuned for the best experience on the O
 
 ### 💎 Core Integrations
 *   **KernelSU / KernelSU-Next:** First-class support for both. Defaulting to `KSUN` (dev branch) for the latest security features.
-*   **SUSFS Support:** Built-in hooks for advanced system-user-space filesystem isolation.
+*   **SUSFS Support:** Built-in hooks for advanced system-user-space filesystem isolation (SUSFS `v2.2.0`).
 *   **OxygenOS 16 Optimized:** specifically targeted at `OP13` with Android 15 & Kernel 6.6.
 
 ### 🛠️ Enabled Features
@@ -70,6 +70,8 @@ Our build configurations are meticulously tuned for the best experience on the O
 | :--- | :--- |
 | ✅ **HMBIRD SCX** | Advanced scheduler extensions |
 | ✅ **BBRv1** | Google's TCP congestion control for better network responsiveness |
+| ✅ **BBRv3** | Improved TCP congestion control (less bufferbloat, better loss response) |
+| ✅ **CAKE & PIE qdisc** | Modern queue disciplines for lower latency (bufferbloat mitigation) |
 | ✅ **TTL Target** | Native support for TTL modification |
 | ✅ **WireGuard** | High-performance, secure VPN kernel support |
 | ✅ **IP Set & IPv6 NAT** | Enhanced networking and firewall capabilities |
