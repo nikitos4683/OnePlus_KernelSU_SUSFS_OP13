@@ -1074,12 +1074,7 @@ runs:
               patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/ksu_toolkit.patch"
               if [ "$KSUVER" -le 33095 ]; then
                 echo "Patching Multi-manager Support for SusFS kernel!"
-                if [ -f "$GITHUB_WORKSPACE/patches/local/multi_manager.patch" ]; then
-                  echo "Applying local Multi-manager patch!"
-                  patch -p1 --forward < "$GITHUB_WORKSPACE/patches/local/multi_manager.patch"
-                else
-                  patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/multi_manager.patch"
-                fi
+                patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/multi_manager.patch"
               fi
               if [ "$KSUVER" -ge 33068 ] && [ "$KSUVER" -lt 33070 ]; then
                 echo "Patching Multi-manager sepolicy Support for SusFS kernel!"
@@ -1104,12 +1099,7 @@ runs:
               patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/ksu_toolkit.patch"
               if [ "$KSUVER" -le 33095 ]; then
                 echo "Patching Multi-manager Support for SusFS kernel!"
-                if [ -f "$GITHUB_WORKSPACE/patches/local/multi_manager.patch" ]; then
-                  echo "Applying local Multi-manager patch!"
-                  patch -p1 --forward < "$GITHUB_WORKSPACE/patches/local/multi_manager.patch"
-                else
-                  patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/multi_manager.patch"
-                fi
+                patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/multi_manager.patch"
               fi
               if [ "$KSUVER" -ge 33068 ] && [ "$KSUVER" -lt 33070 ]; then
                 echo "Patching Multi-manager sepolicy Support for SusFS kernel!"

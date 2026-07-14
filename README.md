@@ -69,8 +69,7 @@ Our build configurations are meticulously tuned for the best experience on the O
 | Feature | Description |
 | :--- | :--- |
 | ✅ **HMBIRD SCX** | Advanced scheduler extensions |
-| ✅ **BBRv1** | Google's TCP congestion control for better network responsiveness |
-| ✅ **BBRv3** | Improved TCP congestion control (less bufferbloat, better loss response) |
+| ✅ **BBRv3** | TCP congestion control (the only BBR variant built in; BBRv1 not included) |
 | ✅ **CAKE & PIE qdisc** | Modern queue disciplines for lower latency (bufferbloat mitigation) |
 | ✅ **TTL Target** | Native support for TTL modification |
 | ✅ **WireGuard** | High-performance, secure VPN kernel support |
@@ -78,7 +77,7 @@ Our build configurations are meticulously tuned for the best experience on the O
 | ✅ **Thin LTO** | Link-Time Optimization for a balanced build performance |
 | ✅ **TMPFS XATTR** | POSIX ACL Support for enhanced filesystem security |
 | ✅ **Custom Branding** | Localversion set to `nikitos4683` |
-| ✅ **nikitos4683 Exclusive Patches** | Local patches for AnyKernel3 Custom Branding and native SUSFS Multi-manager support |
+| ✅ **nikitos4683 Branding** | Local AnyKernel3 custom branding patch |
 
 ### 🚫 Disabled / Experimental
 *   **Optimization Patches:** General optimization patch stack is deliberately disabled to maintain stability.
