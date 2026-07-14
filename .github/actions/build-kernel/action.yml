@@ -129,7 +129,6 @@ runs:
         hmbird="$OP_HMBIRD"
         susfs="$OP_SUSFS"
         bbg="$OP_BBG"
-        bbr="$OP_BBR"
         bbr3="$OP_BBR3"
         ttl="$OP_TTL"
         ip_set="$OP_IP_SET"
@@ -218,12 +217,6 @@ runs:
           errors+=("Input 'bbg' cannot be empty")
         elif [[ "$bbg" != "true" && "$bbg" != "false" ]]; then
           errors+=("Input 'bbg' contains invalid characters. Allowed: 'true' or 'false'. Got: '$bbg'")
-        fi
-
-        if [[ -z "$bbr" ]]; then
-          errors+=("Input 'bbr' cannot be empty")
-        elif [[ "$bbr" != "true" && "$bbr" != "false" ]]; then
-          errors+=("Input 'bbr' contains invalid characters. Allowed: 'true' or 'false'. Got: '$bbr'")
         fi
 
         if [[ -z "$bbr3" ]]; then
@@ -1465,17 +1458,6 @@ runs:
         CONFIG_TMPFS_POSIX_ACL=y
         EOF
 
-    - name: Add BBR
-      if: ${{ env.OP_BBR == 'true' }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        echo "Add BBR"
-        cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
-        CONFIG_TCP_CONG_ADVANCED=y
-        CONFIG_TCP_CONG_BBR=y
-        EOF
-
     - name: Apply BBRv3
       if: ${{ env.OP_BBR3 == 'true' }}
       shell: bash
@@ -2148,7 +2130,6 @@ runs:
           echo "Clean Build: ${{ inputs.clean }}"
           echo ""
           echo "=== OnePlus Features ==="
-          echo "BBR: ${{ env.OP_BBR }}"
           echo "BBRv3: ${{ env.OP_BBR3 }}"
           echo "BBG: ${{ env.OP_BBG }}"
           echo "HMBIRD SCX: ${{ env.OP_HMBIRD }}"
@@ -2216,7 +2197,6 @@ runs:
           echo ""
           echo "| Feature | Status |"
           echo "|---------|--------|"
-          echo "| **BBR** | ${{ env.OP_BBR }} |"
           echo "| **BBRv3** | ${{ env.OP_BBR3 }} |"
           echo "| **BBG** | ${{ env.OP_BBG }} |"
           echo "| **HMBIRD SCX** | ${{ env.OP_HMBIRD }} |"

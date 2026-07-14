@@ -17,7 +17,6 @@
   "susfs": true,
   "ds": false,
   "bbg": false,
-  "bbr": false,
   "bbr3": true,
   "ttl": true,
   "ip_set": true,

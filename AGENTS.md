@@ -74,7 +74,6 @@ Each file in `configs/**/*.json` currently uses this key set:
 - `susfs`
 - `ds`
 - `bbg`
-- `bbr`
 - `ttl`
 - `ip_set`
 - `unicode`
@@ -98,7 +97,7 @@ Field meaning:
 - `bindgen`: optional in-tree bindgen path override. Empty string lets the action auto-detect a prebuilt bindgen or install one for rust builds.
 - `rust_build`: whether bindgen/rust tooling is needed.
 - `disk_cleanup`: whether the CI runner should free extra disk space before build.
-- `hmbird`, `susfs`, `ds`, `bbg`, `bbr`, `bbr3`, `ttl`, `ip_set`, `unicode`, `ntsync`, `optimization_patches`: feature toggles that influence patching and config mutation.
+- `hmbird`, `susfs`, `ds`, `bbg`, `bbr3`, `ttl`, `ip_set`, `unicode`, `ntsync`, `optimization_patches`: feature toggles that influence patching and config mutation.
 - `uname`: custom local version / branding string.
 
 Example observed config:
@@ -123,7 +122,6 @@ Example observed config:
   "susfs": true,
   "ds": false,
   "bbg": false,
-  "bbr": true,
   "ttl": true,
   "ip_set": true,
   "unicode": false,
@@ -287,7 +285,6 @@ The README currently advertises support or integration for:
 - SUSFS
 - optional BBG
 - HMBIRD SCX
-- BBRv1
 - LTO
 - optional optimization patches
 - TTL target support
