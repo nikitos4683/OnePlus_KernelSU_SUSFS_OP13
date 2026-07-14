@@ -16,7 +16,6 @@ jobs:
     env:
       ORG: "OnePlusOSS"
       STATE_FILE: "old_state.json"
-      UPSTREAM_STATUS_REPO: "WildKernels/OnePlus_KernelSU_SUSFS"
       GH_TOKEN: ${{ github.token }}
       GH_HTTP_TIMEOUT: 600
 
@@ -31,7 +30,7 @@ jobs:
         run: |
           cd main
 
-          CONFIG_PATH="configs/oos16/OP13.json"
+          CONFIG_PATH="configs/a16/OP13.json"
           if [ ! -f "$CONFIG_PATH" ]; then
             echo "::error::Expected target config not found: $CONFIG_PATH"
             exit 1
@@ -464,13 +463,8 @@ jobs:
           git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} status_repo_final
           cd status_repo_final
           git fetch origin status-page || true
-          git remote add upstream "https://github.com/${{ env.UPSTREAM_STATUS_REPO }}.git" 2>/dev/null || \
-            git remote set-url upstream "https://github.com/${{ env.UPSTREAM_STATUS_REPO }}.git"
-          git fetch upstream status-page || true
 
-          if git show-ref --verify --quiet refs/remotes/upstream/status-page; then
-            git checkout -B status-page upstream/status-page
-          elif git show-ref --verify --quiet refs/remotes/origin/status-page; then
+          if git show-ref --verify --quiet refs/remotes/origin/status-page; then
             git checkout -B status-page origin/status-page
           else
             git checkout --orphan status-page

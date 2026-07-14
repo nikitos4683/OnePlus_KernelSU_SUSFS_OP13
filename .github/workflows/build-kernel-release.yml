@@ -382,7 +382,7 @@ jobs:
             cat << 'EOF'
           ## 🎯 Build Plan
 
-          **Target:** OP13 (OOS16)
+          **Target:** OP13 (A16)
           **Devices:** ${{ steps.set-matrix.outputs.count }}
 
           **Configuration:**
