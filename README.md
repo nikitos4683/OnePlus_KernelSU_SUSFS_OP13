@@ -9,7 +9,7 @@
 [![SUSFS](https://img.shields.io/badge/SUSFS-Enhanced-d97706?style=for-the-badge&logo=gitlab&logoColor=white)](https://gitlab.com/simonpunk/susfs4ksu)
 [![OP13 Source Status](https://img.shields.io/badge/OP13--Source-active-84cc16?style=for-the-badge&logo=github&logoColor=white)](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md)
 
-### 🚀 Powered by [WildKernels](https://github.com/WildKernels) | Branch: OOS16
+### 🚀 Powered by [WildKernels](https://github.com/WildKernels) | Branch: A16
 
 > This repository is a boutique, nikitos4683-branded kernel fork tailored for the **OnePlus 13 (OP13)** running **OxygenOS 16**.
 
@@ -29,10 +29,10 @@
 
 ## ⚠️ Disclaimer
 
-Flashing a custom kernel is a choice you make for your device. While we strive for stability, there is always a inherent risk.
+Flashing a custom kernel is a choice you make for your device. While we strive for stability, there is always an inherent risk.
 
 *   **Backup:** Always keep a fresh backup of your data.
-*   **Knowledge:** Read the documentations and understand the features before flashing.
+*   **Knowledge:** Read the documentation and understand the features before flashing.
 *   **Responsibility:** I am **not responsible** for bricked devices, damaged hardware, or any issues arising from the use of this kernel.
 *   **Your Choice:** By flashing this, you accept full responsibility for any outcomes.
 
@@ -45,7 +45,7 @@ Flashing a custom kernel is a choice you make for your device. While we strive f
 | 🩹 [Kernel Patches](https://github.com/WildKernels/kernel_patches) | Core patches used in the build process |
 | ⚡ [Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher) | Recommended tool for safe flashing |
 | 📱 [Compatibility Info](./compatibility.md) | Verify supported base versions |
-| 📊 [OnePlusOSS Tracking Dashboard](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md) | Upstream OP13 / OOS16 source tracker |
+| 📊 [OnePlusOSS Tracking Dashboard](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md) | Upstream OP13 / A16 source tracker |
 
 ---
 
@@ -53,7 +53,7 @@ Flashing a custom kernel is a choice you make for your device. While we strive f
 
 - 📊 **Live Dashboard**: [OP13 source tracking & changes](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md)
 - ⏱️ **Update Frequency**: Every 2 hours (Automated)
-- 🎯 **Scope**: only the OnePlusOSS repositories and branches referenced by the active `OP13` / `OOS16` manifest
+- 🎯 **Scope**: Only the OnePlusOSS repositories and branches referenced by the active `OP13` / `A16` manifest
 ---
 
 ## ✨ Features
@@ -63,7 +63,7 @@ Our build configurations are meticulously tuned for the best experience on the O
 ### 💎 Core Integrations
 *   **KernelSU / KernelSU-Next:** First-class support for both. Defaulting to `KSUN` (dev branch) for the latest security features.
 *   **SUSFS Support:** Built-in hooks for advanced system-user-space filesystem isolation (SUSFS `v2.2.0`).
-*   **OxygenOS 16 Optimized:** specifically targeted at `OP13` with Android 15 & Kernel 6.6.
+*   **OxygenOS 16 Optimized:** Specifically targeted at `OP13` with Android 16 & Kernel 6.6.
 
 ### 🛠️ Enabled Features
 | Feature | Description |
@@ -113,7 +113,7 @@ Because this kernel is provided as an **AnyKernel3** flashable ZIP, the standard
 
 ## 🌟 Special Thanks
 
-This project stands on the shoulders of giants. immense gratitude to the following developers and projects:
+This project stands on the shoulders of giants. Immense gratitude to the following developers and projects:
 
 <div align="center">
 

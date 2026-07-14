@@ -9,11 +9,11 @@ This document defines the compatibility requirements for nikitos4683 kernels.
 This repository is currently dedicated to a single active target: **OnePlus 13** on **OxygenOS 16**.
 
 > [!IMPORTANT]
-> **Stock ROMs Only:** The kernel is built using the official [OnePlus Source](https://github.com/OnePlusOSS/) and is strictly intended for **Stock OxygenOS 16** (Android 15) installations.
+> **Stock ROMs Only:** The kernel is built using the official [OnePlus Source](https://github.com/OnePlusOSS/) and is strictly intended for **Stock OxygenOS 16** (Android 16) installations.
 
 ### 📜 Technical Specifications
 *   **Model:** OnePlus 13 (`OP13`)
-*   **OS Version:** OxygenOS 16 (Android 15)
+*   **OS Version:** OxygenOS 16 (Android 16)
 *   **Kernel Version:** `6.6.x` (GKI)
 *   **Manifest:** Built from the latest `android15-6.6` branch.
 
@@ -23,7 +23,7 @@ This repository is currently dedicated to a single active target: **OnePlus 13**
 
 *   **Major OTAs:** Do not attempt to use this kernel after a major Android version upgrade (e.g., A15 -> A16) until a new compatible build is released.
 *   **Verification:** Confirm compatibility against the current branch and the latest released build before flashing after any OTA.
-*   **Cross-device flashing:** Anything outside OP13/OOS16 should be treated as unsupported unless a release explicitly says otherwise.
+*   **Cross-device flashing:** Anything outside OP13/A16 should be treated as unsupported unless a release explicitly says otherwise.
 
 ---
 
