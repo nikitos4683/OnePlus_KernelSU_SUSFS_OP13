@@ -902,7 +902,7 @@ jobs:
             feature_flags=$(jq -r --arg MODEL "$model" --arg OS "$os_ver" '
               .[] |
               select(.model == $MODEL and .os_version == $OS) |
-              "\(.hmbird // false)\t\(.susfs // false)\t\(.bbr // false)\t\(.bbr3 // false)\t\(.bbg // false)\t\(.ttl // false)\t\(.ip_set // false)\t\(.wireguard // false)\t\(.unicode // false)\t\(.optimization_patches // false)\t\(.ds // false)\t\(.ntsync // false)"
+              "\(.hmbird // false)\t\(.susfs // false)\t\(.bbr // false)\t\(.bbr3 // false)\t\(.bbg // false)\t\(.ttl // false)\t\(.ip_set // false)\t\(.unicode // false)\t\(.optimization_patches // false)\t\(.ds // false)\t\(.ntsync // false)"
             ' <<< "$JSON_BUILD_DATA")
 
             features=()
@@ -911,7 +911,7 @@ jobs:
               echo "Warning: No JSON entry found for model: $model" >&2
               features_str="N/A"
             else
-              IFS=$'\t' read -r hmbird susfs bbr bbr3 bbg ttl ip_set wireguard unicode optimization_patches ds ntsync <<< "$feature_flags"
+              IFS=$'\t' read -r hmbird susfs bbr bbr3 bbg ttl ip_set unicode optimization_patches ds ntsync <<< "$feature_flags"
 
               # Build features string based on boolean values
               [[ "$hmbird" == "true" ]] && features+=("🐦 HMBIRD")
@@ -921,7 +921,6 @@ jobs:
               [[ "$bbg" == "true" ]] && features+=("🛡️ BBG")
               [[ "$ttl" == "true" ]] && features+=("🌐 TTL")
               [[ "$ip_set" == "true" ]] && features+=("🧱 IP Set & IPv6 NAT")
-              [[ "$wireguard" == "true" ]] && features+=("🔐 WireGuard")
               [[ "$unicode" == "true" ]] && features+=("🔧 Unicode Fix")
               [[ "$optimization_patches" == "true" ]] && features+=("⚙️ Optimisation Patches")
               [[ "$ds" == "true" ]] && features+=("💻 Droidspaces")
@@ -967,7 +966,6 @@ jobs:
           BBG_ENABLED=$(jq -r 'any(.[]; .bbg == true)' <<< "$JSON_BUILD_DATA")
           TTL_ENABLED=$(jq -r 'any(.[]; .ttl == true)' <<< "$JSON_BUILD_DATA")
           IP_SET_ENABLED=$(jq -r 'any(.[]; .ip_set == true)' <<< "$JSON_BUILD_DATA")
-          WIREGUARD_ENABLED=$(jq -r 'any(.[]; .wireguard == true)' <<< "$JSON_BUILD_DATA")
           UNICODE_ENABLED=$(jq -r 'any(.[]; .unicode == true)' <<< "$JSON_BUILD_DATA")
           OPT_PATCHES_ENABLED=$(jq -r 'any(.[]; .optimization_patches == true)' <<< "$JSON_BUILD_DATA")
           DS_ENABLED=$(jq -r 'any(.[]; (.ds // false) == true)' <<< "$JSON_BUILD_DATA")
@@ -1089,9 +1087,6 @@ jobs:
           echo "- **CAKE & PIE qdisc** - Modern queue disciplines for lower latency (bufferbloat mitigation)." >> release_notes.md
           if [ "$TTL_ENABLED" = "true" ]; then
             echo "- **TTL Target** - Native support for TTL modification." >> release_notes.md
-          fi
-          if [ "$WIREGUARD_ENABLED" = "true" ]; then
-            echo "- **WireGuard** - High-performance, secure VPN kernel support." >> release_notes.md
           fi
           if [ "$IP_SET_ENABLED" = "true" ]; then
             echo "- **IP Set & IPv6 NAT** - Enhanced networking and firewall capabilities." >> release_notes.md

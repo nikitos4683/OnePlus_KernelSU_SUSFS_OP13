@@ -72,7 +72,6 @@ Our build configurations are meticulously tuned for the best experience on the O
 | ✅ **BBRv3** | TCP congestion control (the only BBR variant built in; BBRv1 not included) |
 | ✅ **CAKE & PIE qdisc** | Modern queue disciplines for lower latency (bufferbloat mitigation) |
 | ✅ **TTL Target** | Native support for TTL modification |
-| ✅ **WireGuard** | High-performance, secure VPN kernel support |
 | ✅ **IP Set & IPv6 NAT** | Enhanced networking and firewall capabilities |
 | ✅ **Thin LTO** | Link-Time Optimization for a balanced build performance |
 | ✅ **TMPFS XATTR** | POSIX ACL Support for enhanced filesystem security |

@@ -21,7 +21,6 @@
   "bbr3": true,
   "ttl": true,
   "ip_set": true,
-  "wireguard": true,
   "unicode": false,
   "ntsync": false,
   "optimization_patches": false,
