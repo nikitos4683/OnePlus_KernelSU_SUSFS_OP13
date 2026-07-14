@@ -892,7 +892,7 @@ jobs:
 
           | Model | OS Version | Kernel Version | Features |
           |-------|------------|----------------|----------|
-          EOF
+EOF
           while IFS= read -r full_key; do
             [ -z "$full_key" ] && continue
 
@@ -1014,7 +1014,7 @@ jobs:
 
           | Component | Version/Setting |
           |-----------|----------------|
-          EOF
+EOF
           # Display function: hash → direct hash, branch → branch (hash)
           ksu_display_value() {
             local input="$1"
@@ -1031,17 +1031,17 @@ jobs:
             cat << EOF >> release_notes.md
           | **KernelSU Next Branch** | \`$ksu_display\` |
           | **KernelSU Next Version** | \`$ksu_ver_global\` |
-          EOF
+EOF
           elif [ "$ksu_type" == "KSU" ]; then
             cat << EOF >> release_notes.md
           | **KernelSU Branch** | \`$ksu_display\` |
           | **KernelSU Version** | \`$ksu_ver_global\` |
-          EOF
+EOF
           else
             cat << EOF >> release_notes.md
           | **Unknown KernelSU Fork Branch** | \`\` |
           | **Unknown KernelSU Fork Version** | \`\` |
-          EOF
+EOF
           fi
           cat << EOF >> release_notes.md
           | **SUSFS Version** | \`$SUSFS_BASE_VERSION\` |
@@ -1061,7 +1061,7 @@ jobs:
 
           ### 💎 Core Integrations
           - **${KSU_FLAVOR}** - First-class support for the selected root stack.
-          EOF
+EOF
           if [ "$SUSFS_ENABLED" = "true" ]; then
             echo "- **SUSFS Support** - Built-in hooks for advanced system-user-space filesystem isolation." >> release_notes.md
           fi
@@ -1072,7 +1072,7 @@ jobs:
           - **${OS_LABEL:-A16} Optimized** - Specifically targeted at \`${TARGET_MODEL:-OP13}\` with ${ANDROID_LABEL:-Android 15} & Kernel ${TARGET_KERNEL:-6.6}.
 
           ### 🛠️ Enabled Features
-          EOF
+EOF
           if [ "$HMBIRD_ENABLED" = "true" ]; then
             echo "- **HMBIRD SCX** - Advanced scheduler extensions." >> release_notes.md
           fi
@@ -1105,7 +1105,7 @@ jobs:
           cat << EOF >> release_notes.md
 
           ### 🧪 Optional / Experimental Flags
-          EOF
+EOF
           if [ "$BBG_ENABLED" = "true" ]; then
             echo "- **Baseband Guard (BBG)** - Enabled for this build." >> release_notes.md
           else
@@ -1133,18 +1133,18 @@ jobs:
           ## 📱 Manager Applications
 
           ### Official Manager
-          EOF
+EOF
           if [ -n "$KSUN_BRANCH" ]; then
             cat << EOF >> release_notes.md
           - **KernelSU Next Manager**
             → [GitHub Release](https://github.com/KernelSU-Next/KernelSU-Next/releases)
-            EOF
+EOF
           fi
           if [ -n "$KSU_BRANCH" ]; then
             cat << EOF >> release_notes.md
           - **KernelSU Manager**
             → [GitHub Release](https://github.com/tiann/KernelSU/releases)
-            EOF
+EOF
           fi
           cat << EOF >> release_notes.md
           ### Required Module
@@ -1157,7 +1157,7 @@ jobs:
 
           ---
 
-          EOF
+EOF
           if [ "$OPT_PATCHES_ENABLED" = "true" ]; then
             cat << EOF >> release_notes.md
           ### ⚙️ Optional Tuning
@@ -1165,7 +1165,7 @@ jobs:
 
           ---
 
-          EOF
+EOF
           fi
           cat << EOF >> release_notes.md
           ## 📥 Installation Instructions
@@ -1185,7 +1185,7 @@ jobs:
 
           ---
           ### Previous Releases
-          See [Releases Page](${{ github.server_url }}/${{ github.repository }}/releases)
+          See [Releases Page](${github.server_url}/${github.repository}/releases)
 
           ---
 
@@ -1202,7 +1202,7 @@ jobs:
 
           **⚡ Built for the ${RELEASE_BRAND} fork**
 
-          EOF
+EOF
 
           echo "--- Final Release Notes ---"
           cat release_notes.md
@@ -1237,7 +1237,7 @@ jobs:
           **Kernels:** $(find ./downloaded-artifacts -maxdepth 1 -name "*.zip" -type f | wc -l)
 
           ### 📦 Assets
-          EOF
+EOF
 
           for zip in ./downloaded-artifacts/*.zip; do
             if [ -f "$zip" ]; then
