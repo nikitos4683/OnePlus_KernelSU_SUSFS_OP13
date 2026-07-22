@@ -1,7 +1,7 @@
 # 📱 OnePlus 13 Kernel Tracker
 > **Scope:** OP13 / A16
 > **Manifest:** `manifests/a16/oneplus_13_w.xml`
-> **Last Update:** Wed Jul 22 02:44:19 UTC 2026 (UTC)
+> **Last Update:** Wed Jul 22 13:57:45 UTC 2026 (UTC)
 Automated report for the tracked OnePlusOSS sources used by this repository.
 
 ## 🎯 Tracked Sources
@@ -14,17 +14,17 @@ Automated report for the tracked OnePlusOSS sources used by this repository.
 ### 🛠 OP13 Kernel Sources
 <details><summary><b>android_kernel_common_oneplus_sm8750</b></summary>
 
-#### Branch: `oneplus/sm8750_b_16.0.0_oneplus_13` ✅
-* **Kernel Version:** `6.6.89`
-* **Commit SHA:** `5a55344`
-* **Message:** Synchronize code for OnePlus CPH2649_16.0.7.201(EX01) CPH2653_16.0.7.201(EX01) CPH2655_16.0.7.201(EX01) PJZ110_16.0.7.201(CN01)
+#### Branch: `oneplus/sm8750_b_16.0.0_oneplus_13` 🔄 Updated
+* **Kernel Version:** `6.6.118`
+* **Commit SHA:** `e1b346b`
+* **Message:** Synchronize code for OnePlus CPH2649_16.0.9.401(EX01) CPH2653_16.0.9.401(EX01) PJZ110_16.0.9.401(CN01)
 ---
 </details>
 <details><summary><b>android_kernel_modules_and_devicetree_oneplus_sm8750</b></summary>
 
-#### Branch: `oneplus/sm8750_b_16.0.0_oneplus_13` ✅
+#### Branch: `oneplus/sm8750_b_16.0.0_oneplus_13` 🔄 Updated
 * **Kernel Version:** `N/A`
-* **Commit SHA:** `9e08115`
-* **Message:** Synchronize code for OnePlus CPH2649_16.0.8.301(EX01) CPH2653_16.0.8.301(EX01) CPH2655_16.0.8.301(EX01) PJZ110_16.0.8.301(CN01)
+* **Commit SHA:** `d50b305`
+* **Message:** Synchronize code for OnePlus CPH2649_16.0.9.401(EX01) CPH2653_16.0.9.401(EX01) PJZ110_16.0.9.401(CN01)
 ---
 </details>
