@@ -761,9 +761,7 @@ runs:
         echo "::group::Fetch dependencies"
         set -euo pipefail
         echo "::group::Clone dependencies"
-        echo "Cloning AnyKernel3 and other dependencies..."
-
-        ANYKERNEL_BRANCH="gki-2.0"
+        echo "Cloning build dependencies..."
 
         if [ "${{ env.OP_SUSFS }}" = true ]; then
           # Determine SUSFS branch/commit to use
@@ -790,8 +788,6 @@ runs:
             echo "🔧 Using resolved SUSFS ref: $SUSFS_BRANCH"
           fi
         fi
-
-        echo "Using AnyKernel3 branch: $ANYKERNEL_BRANCH"
 
         if [ "${{ env.OP_SUSFS }}" = true ]; then
           echo "Using SUSFS branch/commit: $SUSFS_BRANCH"
@@ -829,7 +825,13 @@ runs:
           return 1
         }
 
-        retry_clone "https://github.com/TheWildJames/AnyKernel3.git" "$ANYKERNEL_BRANCH"
+        # AnyKernel3 is not cloned here: it comes from the manifest (manifests/<os>/*.xml) and is
+        # synced by kernel-source-sync into $AK3_FOLDER. Both the branding patch below and the
+        # packaging step use that tree, so a clone into $GITHUB_WORKSPACE would be ignored.
+        if [ ! -d "$AK3_FOLDER" ]; then
+          echo "::error::AnyKernel3 missing at $AK3_FOLDER - the manifest sync did not provide it"
+          exit 1
+        fi
         if [ -f "$GITHUB_WORKSPACE/patches/local/anykernel_branding.patch" ]; then
           echo "Applying local AnyKernel3 branding patch!"
           patch -d "$AK3_FOLDER" -p1 < "$GITHUB_WORKSPACE/patches/local/anykernel_branding.patch"
