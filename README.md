@@ -52,7 +52,7 @@ Flashing a custom kernel is a choice you make for your device. While we strive f
 ## 📱 OP13 Source Tracking
 
 - 📊 **Live Dashboard**: [OP13 source tracking & changes](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md)
-- ⏱️ **Update Frequency**: Every 2 hours (Automated)
+- ⏱️ **Update Frequency**: Every 12 hours (Automated)
 - 🎯 **Scope**: Only the OnePlusOSS repositories and branches referenced by the active `OP13` / `A16` manifest
 ---
 

@@ -1,106 +1,64 @@
 # AGENTS.md
 
-## Purpose
+Guidance for AI agents (and humans) working in this repository. Read this before editing — it explains what the repo actually is, where the real logic lives, and which facts are easy to get wrong.
 
-This repository is currently narrowed to a single build target: OnePlus 13 on OOS16. It does not contain the full kernel source tree. Instead, it stores the active device metadata, manifest file, and GitHub Actions logic that:
+## TL;DR
 
-- fetch upstream kernel sources at build time,
-- inject KernelSU or KernelSU-Next,
-- optionally integrate SUSFS,
-- apply a large patch stack,
-- compile on GitHub runners,
-- package the result as AnyKernel3 flashable ZIPs,
-- optionally create a draft GitHub release.
+- This is an **OP13-only, nikitos4683-branded fork** of [`WildKernels/OnePlus_KernelSU_SUSFS`](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS).
+- It contains **no kernel source**. It holds one device config, one manifest, one local patch, and the GitHub Actions pipeline that fetches sources and builds the kernel in CI.
+- The single build target is **OnePlus 13 (`OP13`) on OxygenOS 16 / Android 16 (`A16`), kernel `android15-6.6` (GKI 6.6)**.
+- Builds are **manual-only** (`workflow_dispatch`). There is no local build and no way to fully validate a change on Windows — most failures originate in upstream sources or external repos, not here.
+- The real system of record is [`.github/actions/build-kernel/action.yml`](.github/actions/build-kernel/action.yml). Treat it as high-blast-radius.
 
-If you are debugging or extending this repo, always remember that many failures originate outside this repo in upstream manifests, upstream kernel sources, or external dependency repos.
+## Fork Identity & Upstream Relationship
 
-## Repository Summary
+- `origin` → `nikitos4683/OnePlus_KernelSU_SUSFS_OP13`, working branch **`op13`** (also the default branch).
+- `upstream` → `WildKernels/OnePlus_KernelSU_SUSFS`.
+- Upstream is multi-device; this fork is deliberately narrowed to OP13 by **filtering the build matrix** and by **deleting all other device configs/manifests** (only `a16/OP13.*` remain).
+- Upstream historically renamed the OS folders `oos14/15/16 → a14/15/16` and the JSON field value `OOS16 → A16`. This fork follows that scheme: everything is `a16` / `A16` now. If you see `oos*`/`OOS*` anywhere, it is stale.
 
-- Main audience: maintainers of WildKernels OnePlus releases.
-- Main docs: `README.md` and `compatibility.md`.
-- Active config inventory at the time of writing: `configs/oos16/OP13.json`.
-- Active local manifest: `manifests/oos16/oneplus_13_w.xml`.
-- Total active device configs: 1
+### Sync strategy (agreed with the maintainer)
 
-## Top-Level Layout
+- Merge upstream **only up to the last known-good RELEASE commit**, not `upstream/main` HEAD (recent upstream commits may be unstable). Find the release commit from the upstream release GitHub Actions run's `headSha`.
+- Merge into a **new branch** (e.g. `sync-op13-release`), resolve conflicts, then let the maintainer decide when to merge into `op13`.
+- Established style is **merge commits, not rebase**.
+- On every sync, **preserve the fork customizations** listed under [Branding & Customizations To Preserve](#branding--customizations-to-preserve).
 
-- `configs/`: the active device build metadata lives in `configs/oos16/OP13.json`. Legacy OS folders may still exist as empty directories after cleanup.
-- `manifests/`: the active local XML manifest is `manifests/oos16/oneplus_13_w.xml`. Legacy OS folders may still exist as empty directories after cleanup.
-- `.github/workflows/build-kernel-release.yml`: main entry point, manual-only workflow, matrix generation, optional release creation.
-- `.github/workflows/clean-up.yml`: maintenance workflow for cache and workflow-run cleanup.
-- `.github/workflows/oplus-kernel-monitor.yml`: optional upstream OnePlusOSS tracker for the active OP13 target that updates the `status-page` branch.
-- `.github/actions/build-kernel/action.yml`: composite action with the real build logic, validation, patching, build, validation, and packaging.
-- `.github/actions/kernel-source-sync/action.yml`: composite action used by the build action to download and unpack manifest projects and cached toolchains.
-- `README.md`: project overview, advertised features, install pointers, credits, and support links.
-- `compatibility.md`: device compatibility notes and flashing caveats.
+## Repository Layout
 
-## What Is In This Repo vs. Outside This Repo
+```
+configs/a16/OP13.json                         # the ONLY active device config
+manifests/a16/oneplus_13_w.xml                # the ONLY active local manifest
+patches/local/anykernel_branding.patch        # the ONLY local patch (AnyKernel3 branding)
+README.md                                      # public-facing overview
+compatibility.md                               # device compatibility policy
+AGENTS.md                                      # this file
+.github/
+  workflows/
+    build-kernel-release.yml                   # MAIN entry point (manual build + optional release)
+    oplus-kernel-monitor.yml                   # upstream OP13/A16 source tracker → status-page branch
+    mirror-toolchains.yml                      # mirrors toolchains into the `toolchain-cache` release
+    clean-up.yml                               # ccache / workflow-run maintenance
+  actions/
+    build-kernel/action.yml                    # REAL build logic (parse, patch, compile, package)
+    kernel-source-sync/action.yml              # archive-based source + toolchain fetch
+    cache/restore/action.yml                   # restore ccache/LTO cache from release assets
+    cache/save/action.yml                      # save   ccache/LTO cache to   release assets
+    disk-cleanup/action.yml                    # free runner disk space
+  ISSUE_TEMPLATE/                              # bug report + feature request, scoped to OP13/A16
+```
 
-In this repo:
+There are **no legacy `oos*` or other-device folders** — cleanup removed them entirely.
 
-- Device definitions and feature toggles.
-- Manifest files.
-- Build pipeline logic.
-- Release-note generation logic.
+## In This Repo vs. Outside This Repo
 
-Not in this repo:
+**In repo:** device config, local manifest, local branding patch, the CI pipeline, release-note generation logic.
 
-- The full OnePlus kernel source trees.
-- The `kernel_manifest` upstream repository contents.
-- The external patch repositories cloned during CI.
-- Local developer helper scripts for building.
+**Outside repo (fetched at build time):** the OnePlus kernel source trees, the SUSFS patch set, the shared `kernel_patches` stack, AnyKernel3, KernelSU / KernelSU-Next, and all toolchains. Consequently, local inspection explains *orchestration and intent*, but a compile or patch failure can live entirely in an upstream revision.
 
-This means local inspection can explain orchestration and patch intent, but not every compile or patch failure.
+## Config Schema — `configs/a16/OP13.json`
 
-## Config Schema
-
-Each file in `configs/**/*.json` currently uses this key set:
-
-- `model`
-- `soc`
-- `branch`
-- `manifest`
-- `android_version`
-- `kernel_version`
-- `os_version`
-- `lto`
-- `zyc_compiler`
-- `c_compiler`
-- `rust_compiler`
-- `bindgen`
-- `rust_build`
-- `disk_cleanup`
-- `hmbird`
-- `susfs`
-- `ds`
-- `bbg`
-- `ttl`
-- `ip_set`
-- `unicode`
-- `ntsync`
-- `optimization_patches`
-- `uname`
-
-Field meaning:
-
-- `model`: device identifier used throughout logs, artifacts, and release notes. Validation expects it to start with `OP`.
-- `soc`: SoC family, for example `sun`.
-- `branch`: upstream manifest branch or a `wild/*` branch convention used by this repo.
-- `manifest`: XML manifest filename or HTTPS URL.
-- `android_version`: Android generation, for example `android15`.
-- `kernel_version`: kernel family in `X.Y` form, for example `6.6`.
-- `os_version`: OOS generation, for example `OOS16`.
-- `lto`: one of `none`, `thin`, or `full`.
-- `zyc_compiler`: optional external clang tarball URL. Empty string keeps default toolchain selection.
-- `c_compiler`: optional in-tree clang path override.
-- `rust_compiler`: optional in-tree rust toolchain path override.
-- `bindgen`: optional in-tree bindgen path override. Empty string lets the action auto-detect a prebuilt bindgen or install one for rust builds.
-- `rust_build`: whether bindgen/rust tooling is needed.
-- `disk_cleanup`: whether the CI runner should free extra disk space before build.
-- `hmbird`, `susfs`, `ds`, `bbg`, `bbr3`, `ttl`, `ip_set`, `unicode`, `ntsync`, `optimization_patches`: feature toggles that influence patching and config mutation.
-- `uname`: custom local version / branding string.
-
-Example observed config:
+The build matrix is generated from every `configs/**/*.json`, then filtered to `model == "OP13" && os_version == "A16"`. Current file:
 
 ```json
 {
@@ -110,7 +68,7 @@ Example observed config:
   "manifest": "oneplus_13_w.xml",
   "android_version": "android15",
   "kernel_version": "6.6",
-  "os_version": "OOS16",
+  "os_version": "A16",
   "lto": "thin",
   "zyc_compiler": "https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240723-release/Clang-19.0.0git-20240723.tar.gz",
   "c_compiler": "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin",
@@ -122,6 +80,7 @@ Example observed config:
   "susfs": true,
   "ds": false,
   "bbg": false,
+  "bbr3": true,
   "ttl": true,
   "ip_set": true,
   "unicode": false,
@@ -131,266 +90,201 @@ Example observed config:
 }
 ```
 
+Field meanings (validation lives in `build-kernel/action.yml` → *Validate Inputs*):
+
+| Field | Meaning / rules |
+|-------|-----------------|
+| `model` | Device id used in logs, artifacts, release notes. **Must start with `OP`**. |
+| `soc` | SoC family (e.g. `sun`). `[A-Za-z0-9_-]+`. |
+| `branch` | Manifest branch. A `wild/*` value triggers the **local-manifest** flow (see below). |
+| `manifest` | XML filename **or** an `https://…xml` URL. |
+| `android_version` | `android<N>` — the GKI base (`android15`), **not** the marketing OS. |
+| `kernel_version` | `X.Y` (`6.6`). |
+| `os_version` | Marketing OS; **must start with `A`** (`A16`). Drives the matrix filter and artifact names. |
+| `lto` | `none` \| `thin` \| `full`. |
+| `zyc_compiler` | Optional external clang tarball URL (highest clang priority). Empty = skip. |
+| `c_compiler` | Optional in-tree clang path override. |
+| `rust_compiler` / `bindgen` | Optional in-tree rust / bindgen path overrides (only relevant when `rust_build`). |
+| `rust_build` | Enables rust/bindgen tooling and rust binder configs. |
+| `disk_cleanup` | Run the `disk-cleanup` action before building. |
+| `uname` | Localversion / branding string. **Max 44 chars.** |
+| `hmbird`,`susfs`,`ds`,`bbg`,`bbr3`,`ttl`,`ip_set`,`unicode`,`ntsync`,`optimization_patches` | Boolean feature toggles (`"true"`/`"false"`) — see [Patch & Feature Logic](#patch--feature-logic). |
+
+> Note: `android_version` stays `android15` while `os_version` is `A16` — the GKI base is `android15-6.6` even though the marketing OS is Android 16. This mismatch is intentional; don't "fix" it.
+
 ## Manifest Conventions
 
-- The active local manifest is `manifests/oos16/oneplus_13_w.xml`.
-- Legacy `manifests/oos14` and `manifests/oos15` directories may remain, but they no longer contain active XML files after the single-target cleanup.
-- Example contents point to CodeLinaro remotes for common build pieces, OnePlusOSS repositories for device/common kernel trees, and pinned prebuilts for kernel build tools and clang.
+Active manifest: `manifests/a16/oneplus_13_w.xml`. It pins:
+- CodeLinaro (`clo-la`) prebuilts: kernel-build-tools and clang, at fixed revisions.
+- OnePlusOSS (`origin`): `kernel_platform/common` and the modules/devicetree tree, at `oneplus/sm8750_b_16.0.0_oneplus_13`.
+- WildKernels (`wild`): AnyKernel3 at a pinned revision.
 
-Important behavior in the composite action:
+Manifest resolution logic (in `kernel-source-sync` → *Download and Prepare Manifest*):
+1. If `manifest` is an `https://` URL → download it.
+2. Else if `branch` matches `wild/*` → **copy the local file** from `manifests/<os_version lowercased>/<manifest>` (i.e. `manifests/a16/oneplus_13_w.xml`). **This is the active path** and is easy to miss.
+3. Else → fetch from `OnePlusOSS/kernel_manifest` at `<branch>/<manifest>`.
 
-- If `manifest` is an HTTPS URL, the workflow downloads it into `.repo/manifests/temp_manifest.xml`.
-- If `branch` matches `wild/*`, the workflow copies the manifest from this repo under `manifests/<os_version-lowercase>/`.
-- Otherwise it uses the configured `branch` and `manifest` directly against `https://github.com/OnePlusOSS/kernel_manifest.git`.
+If you touch the config's `os_version` or `manifest`, keep the `manifests/a16/…` path in sync, or the `wild/*` flow breaks.
 
-That `wild/*` behavior is easy to miss and matters when adding or editing device support.
+## Build Pipeline — `build-kernel-release.yml`
 
-## Main Workflow: build-kernel-release.yml
+Manual-only (`workflow_dispatch`). Key inputs:
 
-This is the main user-triggered build entry point.
+| Input | Purpose |
+|-------|---------|
+| `make_release` | Create a **draft** release after successful builds. |
+| `ksu_options` | JSON array of KSU variants, e.g. `[{"type":"ksun","hash":"dev"}]`. Missing `hash` defaults: `KSUN→dev`, `KSU→main`. |
+| `optimize_level` | `O2` or `O3`. |
+| `clean_build` | Disable ccache. |
+| `debug` | Dump debug artifacts / verbose logs. |
+| `mirror_toolchains` | Run the toolchain mirror before building (rarely needed). |
+| `build_timestamp` | Fixed `uname -a` timestamp for reproducibility (empty = current time). |
+| `android15-6_6_susfs_branch_or_commit` | Override SUSFS ref (empty = `gki-android15-6.6`). |
 
-Key inputs:
+Jobs, in order:
 
-- `make_release`: create a draft release after successful builds.
-- `ksu_options`: JSON array describing KSU variants to build.
-- `optimize_level`: `O2` or `O3`.
-- `clean_build`: disables ccache usage.
-- `build_timestamp`: optional fixed timestamp for `uname -a` / reproducible branding.
-- `android15-6_6_susfs_branch_or_commit`
+1. **`set-op-model`** — checks out `configs/` only, generates the matrix, filters to `OP13`/`A16`, normalizes `ksu_options`, and **pre-resolves hashes before building**:
+   - KSU/KSUN ref → commit SHA via the GitHub GraphQL API (retry x3).
+   - SUSFS ref → commit SHA via the GitLab GraphQL API; on release runs it also extracts `SUSFS_VERSION` from `susfs.h` and derives `susfs_base_version` (used for the release tag). Version mismatch across active GKI keys is a hard error on release.
+   - Emits one matrix row per (device × KSU option), plus a build-plan summary.
+2. **`mirror_toolchain`** — only if `mirror_toolchains=true`; calls `mirror-toolchains.yml`.
+3. **`prepare_ccache`** — downloads the custom ccache binary **once** and shares it as an artifact (avoids ~30 parallel jobs hammering the same raw URL and getting throttled).
+4. **`build`** — matrix job (`fail-fast: false`). Installs deps, restores ccache, strips KSU fields from the config, then runs the `build-kernel` composite action.
+5. **`trigger-release`** — only if `make_release=true` and all builds succeeded: computes the next `<SUSFS_BASE_VERSION>-r<N>` tag, downloads artifacts, generates release notes from the ZIP filenames + matrix metadata, creates a **draft** release, and uploads the ZIPs.
 
-Important workflow behavior:
+## Composite Action — `build-kernel/action.yml`
 
-- Builds are manual only. There is no push-triggered validation in the main workflow.
-- The matrix is built from every JSON file under `configs/`.
-- The matrix is then explicitly filtered to `model == "OP13"` and `os_version == "OOS16"`.
-- `ksu_options` is normalized with `jq`.
-- If a KSU entry omits `hash`, defaults are `KSUN -> dev` and `KSU -> main`.
-- Each device config is multiplied by each KSU option, producing one matrix row per combination.
-- The workflow input surface is intentionally reduced to the OnePlus 13 OOS16 path only, even though some shared helper logic still computes generic GKI metadata.
+This is the authoritative build logic. High-level flow:
 
-## Composite Action: build-kernel/action.yml
+1. Parse `op_config_json` → `OP_*` env vars; validate every field.
+2. Download the `repo` tool to `/usr/local/bin/repo` and export `$REPO`. **It is never invoked** — source sync is archive-based (see below). This is dead legacy from the upstream `repo sync` era; don't build on it.
+3. **Sync kernel source** via `kernel-source-sync`.
+4. Read the real kernel version from the synced `Makefile` (`VERSION.PATCHLEVEL.SUBLEVEL`) and derive `SUSFS_KERNEL_BRANCH=gki-<android>-<X.Y>`.
+5. Detect clang: priority **ZyC URL → `c_compiler` override → in-tree prebuilts → system clang**. Optionally detect/install rust + bindgen when `rust_build`.
+6. Restore ccache and (if LTO) the LTO/LD cache from release assets.
+7. Clone deps into `$GITHUB_WORKSPACE` (`kernel_patches`, `susfs4ksu`), apply the local AnyKernel3 branding patch, and check out the resolved SUSFS ref. **AnyKernel3 is not cloned — see below.**
+8. Strip ABI-protected exports.
+9. Add **KernelSU** or **KernelSU-Next** (compute `KSU_VERSION`, set hook needs).
+10. Apply **SUSFS** patches (version-specific case block, `v1.5.8`…`v2.2.0`) + arch defconfig.
+11. Apply optional feature patches (BBG, KSU hooks, other patches, NTSync, Unicode) and defconfig fragments (tmpfs, BBRv3, qdisc, TTL, IP set/IPv6 NAT, Droidspaces, build tuning, rust).
+12. Set branding localversion `-<android>-<uname>`.
+13. `make gki_defconfig` → tweak `.config` (localversion, O2/O3, `-mcpu=oryon-1` for `wild/sm8750|wild/sm8850|wild/sm8845`, LTO mode) → `olddefconfig` → parallel `make Image`.
+14. Validate the `Image` (see below), package into AnyKernel3 ZIP, compute SHA256s, upload artifact, save caches.
 
-The build-kernel composite action is the real system of record for build behavior.
+### Source sync — `kernel-source-sync/action.yml`
 
-High-level flow:
+Not a classic `repo sync`. A Python step parses the manifest and, per project, downloads a **release/archive tarball** (`github.com/.../archive/<rev>.tar.gz`, googlesource `+archive`, or codelinaro `-/archive`) in parallel, extracting into the project path. Toolchain projects (clang, rust, clang-tools, build-tools, AnyKernel3) are first looked up in this repo's **`toolchain-cache` release** (single file or `.part*` splits); a cache miss for a toolchain is **fatal** and tells you to run the mirror workflow. `linkfile`/`copyfile` manifest directives are applied afterward. This makes the build heavily dependent on GitHub release availability and upstream archive endpoints.
 
-1. Parse `op_config_json` and export it into environment variables.
-2. Validate every important field.
-3. Optionally install `bindgen` if `rust_build` is enabled.
-4. Install or locate the `repo` tool.
-5. Download and unpack the external kernel source tree via `kernel-source-sync`.
-6. Set directory paths for artifacts and dependencies.
-7. Read the real kernel version from synced source files.
-8. Detect clang and optional rust toolchains from prebuilts.
-9. Configure ccache unless clean mode is requested.
-10. Clone external helper repos.
-11. Add KernelSU or KernelSU-Next.
-12. Apply SUSFS and other patch stacks.
-13. Generate and mutate `out/.config`.
-14. Compile the kernel.
-15. Validate the built `Image`.
-16. Package the kernel into AnyKernel3 ZIP format.
-17. Upload the ZIP as a workflow artifact.
+### AnyKernel3 comes from the manifest, not from a clone
 
-## External Dependencies Cloned at Build Time
+The AnyKernel3 tree that actually gets branded and packaged is **`$AK3_FOLDER` = `$GITHUB_WORKSPACE/OP13/AnyKernel3`**, synced from the manifest project (`WildKernels/AnyKernel3` @ the revision pinned in `manifests/a16/oneplus_13_w.xml`) and served through the `toolchain-cache` release, since `AnyKernel3` is in `TOOLCHAIN_MAP`.
 
-Observed clone targets include:
+So: **to change the packaged AnyKernel3, edit the manifest project revision.** Both the branding patch (`patch -d "$AK3_FOLDER"`) and packaging (`cp Image "$AK3_FOLDER/"`, `cd "$AK3_FOLDER"`) target that tree, and the step now hard-fails with a clear error if it is missing.
 
-- `https://github.com/nikitos4683/AnyKernel3.git`
-- `https://github.com/TheWildJames/kernel_patches.git`
-- `https://gitlab.com/simonpunk/susfs4ksu.git`
+> **Upstream drift warning.** Upstream additionally runs `retry_clone https://github.com/TheWildJames/AnyKernel3.git` (branch `gki-2.0`) inside *Fetch SusFS and Other Dependencies*. That step's cwd is `$GITHUB_WORKSPACE`, so the clone lands at `$GITHUB_WORKSPACE/AnyKernel3` — a **different path** from `$AK3_FOLDER`, and nothing ever reads it. This fork removed that dead clone; **an upstream merge may reintroduce it — drop it again.**
 
-KernelSU integration is fetched via remote setup scripts:
+Contrast: `kernel_patches` and `susfs4ksu` *are* consumed from their clones, because `$KERNEL_PATCHES_FOLDER`/`$SUSFS_FOLDER` do resolve to `$GITHUB_WORKSPACE/...`.
 
-- KernelSU-Next setup script from `KernelSU-Next/KernelSU-Next`
-- KernelSU setup script from `tiann/KernelSU`
+## Caching Architecture (release-asset based, NOT `actions/cache`)
 
-The legacy repo tool setup still fetches from:
+Caches are stored as **assets on dedicated releases** in this repo, via `cache/save` + `cache/restore`:
+- `ccache-cache` bucket — per (ksu_type, model, os, kernel, clang-fingerprint) ccache.
+- `lto-cache` bucket — ThinLTO/LD cache (only when `lto != none`).
+- `toolchain-cache` — deduplicated toolchain tarballs, populated by `mirror-toolchains.yml`.
 
-- `https://storage.googleapis.com/git-repo-downloads/repo`
+Archives are zstd-compressed and split at ~1.86 GB into `.part*` assets. `clean-up.yml` handles `actions/cache` GitHub caches and old workflow runs separately (its device list is legacy multi-device heritage and does not reflect what this fork builds).
 
-Kernel source sync currently uses `.github/actions/kernel-source-sync/action.yml` to download manifest project archives and cached toolchain tarballs, so this repo is highly dependent on external network availability, GitHub release assets, and upstream stability.
+## Patch & Feature Logic
 
-## Patch and Feature Logic
+Feature toggle → what it does (all in `build-kernel/action.yml`):
 
-The composite action applies a wide patch stack. Based on the current action, categories include:
+| Toggle | Effect | Current OP13 |
+|--------|--------|--------------|
+| `susfs` | Copy SUSFS fs/include files, apply version-matched patch set + `CONFIG_KSU_SUSFS_*`. | ✅ on |
+| `hmbird` | Apply OnePlus HMBIRD SCX (fengchi + overwriter + hmbird_config) patches. | ✅ on |
+| `bbr3` | `CONFIG_TCP_CONG_ADVANCED/BBR3` + backport patch for the GKI base. | ✅ on |
+| `ttl` | TTL/HL target + match configs. | ✅ on |
+| `ip_set` | IP set + IPv6 NAT configs + `IPv6_NAT_FIX.patch`. | ✅ on |
+| `bbg` | Baseband Guard LSM (external setup script) + LSM Kconfig edit. | ❌ off |
+| `ds` | Droidspaces (SYSVIPC/KABI patches + configs). | ❌ off |
+| `ntsync` | NTSync primitives (model/GKI-matched patch). | ❌ off |
+| `unicode` | Unicode bypass fix patch (version-selected). | ❌ off |
+| `optimization_patches` | Large general perf/latency patch stack. | ❌ off |
 
-- SUSFS enablement and SUSFS compatibility fixes
-- Baseband Guard related patches when `bbg` is enabled
-- manual hooks compatibility patch
-- ptrace leak fix for older kernels
-- HMBIRD patches for selected OnePlus devices
-- optional Droidspaces enablement when `ds` is enabled
-- optional NTSync patching when `ntsync` is enabled
-- optional general optimization patches gated by `optimization_patches`
-- Unicode bypass fix when `unicode` is enabled
-- IPv6 NAT related patching
+**Always-applied** (independent of toggles): tmpfs XATTR/POSIX ACL, qdisc set (`FQ`, `FQ_CODEL`, `CAKE`, `PIE`, `FQ_PIE`), and build-tuning configs. So CAKE/PIE and tmpfs appear even though they have no dedicated flag.
 
-Many patch applications use `patch -p1 --forward` with fuzz or tolerant behavior. That is practical for maintenance, but it also means:
+Most patches use `patch -p1 --forward` with fuzz — tolerant by design, which means an upstream source change can silently stop a patch from applying and break the build with no change on this side. There are also several `sed`/`perl` "fake patch" fixups gated on `android15-6.6` to make SUSFS apply cleanly.
 
-- upstream source changes can silently increase fragility,
-- a patch may partially stop applying after an upstream change,
-- build breakage may appear suddenly without any change in this repo.
+## Build Output, Validation & Artifact Naming
 
-Treat `.github/actions/build-kernel/action.yml` and `.github/actions/kernel-source-sync/action.yml` as high-blast-radius code.
+`Image` validation: existence, ARM64 file format, minimum size **6,102,400 bytes**, warning count, SHA256, `uname` string extraction.
 
-## Build Output and Validation
-
-Build steps currently revolve around:
-
-- `make O=out gki_defconfig`
-- `.config` mutation with `scripts/config`
-- `make O=out olddefconfig`
-- parallel `make`
-
-Image validation includes:
-
-- file existence check,
-- ARM64 file format check,
-- minimum image size check,
-- warning count extraction,
-- SHA256 generation,
-- build-time reporting.
-
-Observed minimum image size threshold:
-
-- `6102400` bytes
-
-Artifact naming:
-
-- Without SUSFS: `AK3-NIKITOS4683-<model>_<os>_<kernel-full>_<ksu-type>_<ksu-version>.zip`
+Artifact ZIP names (parsed later by the release step, so keep them stable):
+- No SUSFS: `AK3-NIKITOS4683-<model>_<os>_<kernel-full>_<ksu-type>_<ksu-version>.zip`
 - With SUSFS: `AK3-NIKITOS4683-<model>_<os>_<kernel-full>_<ksu-type>_<ksu-version>_SuSFS_<susfs-version>.zip`
 
-Packaging uses AnyKernel3 and places the built `Image` inside the AnyKernel3 tree before zipping.
+The `AK3-NIKITOS4683-` prefix is fork branding and is stripped by the release-notes parser (`rest="${zipname#AK3-NIKITOS4683-}"`). Packaging copies the built `Image` into the AnyKernel3 tree before zipping.
 
 ## Release Flow
 
-If `make_release` is enabled:
+On `make_release=true`:
+1. Compute the next tag: `<SUSFS_BASE_VERSION>-r<N>` (increment the `-r*` suffix of the latest matching tag, else `-r1`).
+2. Download all ZIP artifacts.
+3. Generate release notes dynamically from ZIP filenames + `matrix.json` feature flags (devices table, build config, feature list, manager links, install steps, credits). `SUSFS_BASE_VERSION` is derived from the SUSFS `susfs.h` at build time, not hardcoded.
+4. Create a **draft** GitHub release and upload the ZIPs.
 
-- the workflow creates a new tag based on `SUSFS_BASE_VERSION`,
-- downloads artifacts,
-- generates release notes dynamically,
-- creates a draft GitHub release,
-- uploads ZIP artifacts to that release.
+## Auxiliary Workflows
 
-Release notes are generated from built artifacts plus the matrix metadata, not from hand-written markdown.
-`SUSFS_BASE_VERSION` is now derived from the resolved SUSFS refs used in the run rather than kept as a fixed constant.
+- **`oplus-kernel-monitor.yml`** — scheduled **every 12 h** (`0 */12 * * *`) + manual. Derives its tracking scope from `configs/a16/OP13.json` and the local manifest (OnePlusOSS `origin` projects only), diffs against state stored on the `status-page` branch, opens/updates a notification issue on change, and regenerates the `status-page` README. If you change this cron, update the "Update Frequency" line in `README.md` to match.
+- **`mirror-toolchains.yml`** — Sundays 00:00 UTC + manual + `workflow_call`. Resolves unique toolchains across all configs and uploads them (split if >~1.86 GB) into the `toolchain-cache` release. Run this if source sync reports a fatal toolchain cache miss.
+- **`clean-up.yml`** — manual ccache / workflow-run maintenance with dry-run and per-device/age filters. Its large device dropdown is inherited from upstream and is broader than this fork's single target.
 
-## User-Facing Project Claims
+## Branding & Customizations To Preserve
 
-The README currently advertises support or integration for:
+On every upstream sync, keep:
+- `uname: nikitos4683`, ZIP prefix `AK3-NIKITOS4683-` (parser strips exactly this), release brand `nikitos4683`.
+- `patches/local/anykernel_branding.patch` — the **only** local patch; rewrites `anykernel.sh` strings/URLs to nikitos4683. Applied to the manifest-synced AK3 tree (`$AK3_FOLDER`), so it must stay in sync with the AnyKernel3 revision pinned in the manifest — an upstream AK3 bump can break this patch.
+- Matrix filter pinned to `OP13`/`A16`; all non-OP13 configs/manifests deleted.
+- Optional patches off (`ds/bbg/unicode/ntsync/optimization_patches = false`).
+- BBRv3 as the sole BBR variant (`bbr3: true`, no forced default, no v1).
+- Point new `kernel_patches` at `WildKernels/kernel_patches`.
+- The removal of upstream's dead `TheWildJames/AnyKernel3` clone (see [AnyKernel3 comes from the manifest](#anykernel3-comes-from-the-manifest-not-from-a-clone)) — re-drop it if a sync brings it back.
+- The OP13-scoped issue templates, and the deletion of upstream's `request_new_device.yml` / `request_compatibility.yml`.
 
-- KernelSU
-- KernelSU-Next
-- SUSFS
-- optional BBG
-- HMBIRD SCX
-- LTO
-- optional optimization patches
-- TTL target support
-- IP Set and IPv6 NAT support
-- TMPFS XATTR and POSIX ACL support
-- optional Unicode bypass fix
-- workflow-level optional Droidspaces / NTSync support that is currently disabled in the active OP13 config
+## Docs & Known Drift
 
-Keep README claims aligned with actual config flags and action behavior.
-
-## Compatibility Notes From Docs
-
-`compatibility.md` currently states:
-
-- kernels are expected to work on stock ROMs,
-- current kernels are built from Android 15 manifests,
-- users should not reuse old ZIPs after a major Android OTA unless compatibility is confirmed,
-- anything outside OnePlus 13 on OOS16 should be treated as unsupported unless a release explicitly says otherwise.
-
-If you change manifests, supported devices, or kernel bases, update docs accordingly.
+- `README.md` — public overview; advertises KSU/KSUN, SUSFS `v2.2.0`, HMBIRD, BBRv3, CAKE/PIE, TTL, IP set/IPv6 NAT, thin LTO, tmpfs XATTR, custom branding. Keep these claims aligned with the config flags and action behavior, and keep its "Update Frequency" line in sync with the monitor cron.
+- `compatibility.md` — policy: stock OxygenOS 16 (Android 16) only, GKI 6.6.x, built from the `android15-6.6` base; don't reuse ZIPs across major OTAs; nothing outside OP13/A16 is supported.
+- `.github/ISSUE_TEMPLATE/` — **rewritten for this fork**: only `bug_report.yml` (OP13 / stock OxygenOS 16, KSUN/KSU managers, ZIP filename + `uname -r` required) and `feature_request.yml` (distinguishes "enable an existing disabled toggle" from "add a new patch") remain. Upstream's `request_new_device.yml` and `request_compatibility.yml` were **deleted** — this fork will never add a device and keeps no non-OnePlus compatibility list. `config.yml` routes other devices to upstream and labels the WildKernels Telegram as upstream community, not fork support. **An upstream merge may resurrect the deleted forms — delete them again.**
+- `clean-up.yml`'s device dropdown and the generic GKI helper logic in `set-op-model` (SUSFS keys for android12-5.10 … android16-6.12) are likewise multi-device leftovers — harmless, but don't mistake them for supported targets.
 
 ## Common Maintenance Tasks
 
-### Add or Update Device Support
+- **Change a build feature** → edit the toggle in `configs/a16/OP13.json`; for shared patch/config logic edit `build-kernel/action.yml`.
+- **Change matrix / inputs / release behavior** → edit `build-kernel-release.yml` (careful with tag generation and the ZIP-filename parser).
+- **Change packaging / artifact naming** → edit `build-kernel/action.yml` **and** the release-notes parser in `build-kernel-release.yml` together.
+- **Update the manifest / kernel base** → edit `manifests/a16/oneplus_13_w.xml` (+ config), and update `compatibility.md`/`README.md`.
 
-- Add or edit the JSON config in the correct `configs/oosXX/` directory.
-- Add or edit the matching XML manifest in `manifests/oosXX/` if using the `wild/*` flow.
-- Make sure `branch`, `manifest`, `android_version`, `kernel_version`, and `os_version` match the intended source base.
-- Double-check feature toggles to avoid unintentionally enabling patches on unsupported devices.
+## Editing Rules For Agents
 
-### Change Build Features Across Devices
+- Don't assume anything can be built or fully validated locally on Windows.
+- Prefer small, well-scoped changes — CI blast radius is large and slow to verify.
+- Keep JSON `os_version` (`A16`), the `manifests/a16/` path, and the `wild/*` flow consistent.
+- If you change ZIP naming, update every downstream parser in the same change.
+- Treat `build-kernel/action.yml` and `kernel-source-sync/action.yml` as high-blast-radius.
+- On patch/compile failure, first suspect an upstream source revision, not this repo.
+- This repo has **no test suite**. Practical validation = check JSON/manifest consistency, review workflow logic, trigger the workflow manually, read logs and artifacts. Changes can sit unvalidated until someone runs a build.
 
-- For per-device feature defaults, edit JSON config flags.
-- For shared patch logic or config mutation, edit `.github/actions/build-kernel/action.yml`.
-- For changes that affect release notes or matrix generation, edit `.github/workflows/build-kernel-release.yml`.
+## Debugging A Failed Build — check in order
 
-### Change Packaging or Artifact Naming
+1. Did the matrix still include `OP13` on `A16` after the filter?
+2. Does the config point to the right `branch`/`manifest`, and does `manifests/a16/oneplus_13_w.xml` exist (for the `wild/*` flow)?
+3. Did an archive download, toolchain-cache lookup, or source sync fail? (Toolchain miss → run `mirror-toolchains.yml`.)
+4. Did KSU/KSUN or SUSFS hash resolution fail in `set-op-model`?
+5. Did a SUSFS or other patch stop applying cleanly (upstream drift)?
+6. Did `.config` mutation (LTO/O-level/localversion) produce an invalid config?
+7. Did `Image` validation fail (size/format), or did ZIP naming / release-note parsing break?
 
-- Update `.github/actions/build-kernel/action.yml`.
-- Review release-note parsing logic in `.github/workflows/build-kernel-release.yml`, because it parses ZIP filenames.
+## Keep This File Updated When Changing
 
-### Change Release Behavior
-
-- Update `.github/workflows/build-kernel-release.yml`.
-- Be careful not to break tag generation, release-note generation, or artifact upload.
-
-## Recommended Editing Rules for Agents
-
-- Do not assume this repo can be fully tested locally on Windows.
-- Prefer small, well-scoped changes because CI blast radius is large.
-- Keep JSON and manifest naming aligned.
-- If you change a `wild/*` config, verify the referenced manifest exists in the matching `manifests/<oos>/` folder.
-- If you change ZIP naming, also update any code that parses artifact names later in the workflow.
-- If you touch `.github/actions/build-kernel/action.yml` or `.github/actions/kernel-source-sync/action.yml`, assume all devices may be affected.
-- If a failure appears during patching or compile, consider whether the real issue is in an upstream source revision, not in this repo.
-
-## Validation Reality
-
-There is no standalone unit test suite in this repo.
-
-The practical validation path today is:
-
-- check JSON and manifest consistency,
-- review workflow logic,
-- run the GitHub Actions workflow manually,
-- inspect build logs and produced artifacts.
-
-This means changes can sit unvalidated until someone explicitly triggers the workflow.
-
-## Known Risks and Gotchas
-
-- The repo is not self-contained.
-- Builds depend on GitHub, GitLab, Google-hosted `repo`, OnePlusOSS, and CodeLinaro.
-- Manual-only workflow means regressions may not be caught quickly.
-- Patch application is intentionally tolerant but therefore fragile.
-- Auxiliary maintenance workflows still carry some multi-device heritage even though the build workflow itself is single-target.
-- Local documentation may drift from build reality if configs and action behavior change independently.
-
-## Best Starting Points by Task Type
-
-- Add or fix device support: start in `configs/` and `manifests/`.
-- Change kernel features, patch flow, packaging, or validation: start in `.github/actions/build-kernel/action.yml`.
-- Change matrix generation, workflow inputs, or release behavior: start in `.github/workflows/build-kernel-release.yml`.
-- Update public-facing support expectations: review `README.md` and `compatibility.md`.
-
-## If You Are Debugging a Failed Build
-
-Check these in order:
-
-1. Was the correct JSON config selected in the matrix?
-2. Did the single-target filter still include `OP13` on `OOS16`?
-3. Does the config point to the correct manifest and branch?
-4. If `branch` is `wild/*`, does the local manifest file exist in the correct `manifests/<oos>/` directory?
-5. Did an external clone, archive download, toolchain cache download, or source sync fail?
-6. Did a SUSFS or other patch stop applying cleanly?
-7. Did `.config` mutation produce an invalid kernel configuration?
-8. Did artifact naming or release-note parsing break after a naming change?
-
-## Maintenance Note
-
-Keep this file updated when changing:
-
-- config schema,
-- directory layout,
-- workflow inputs,
-- release artifact naming,
-- major dependency URLs,
-- patch categories,
-- compatibility policy.
+Config schema · directory layout · workflow inputs · caching/release-asset scheme · artifact naming · major dependency URLs · patch categories · monitor/mirror cadence · compatibility policy.
