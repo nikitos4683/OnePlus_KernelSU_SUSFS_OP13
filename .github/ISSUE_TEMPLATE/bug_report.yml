@@ -7,8 +7,8 @@ body:
     attributes:
       value: |
         > [!IMPORTANT]
-        > These kernels are built for **Stock ROMs only** (OOS/COS). Do **not** report issues on custom ROMs.
-        > If you are using a non-OnePlus device, make sure you have disabled dm-verity before flashing.
+        > This repo builds **one** kernel: **OnePlus 13 on stock OxygenOS 16 (Android 16)**.
+        > Reports from other devices, custom ROMs, or other OxygenOS versions will be closed — see [compatibility](../../compatibility.md).
         > Fill in **all required fields** — incomplete reports will be closed without investigation.
 
   - type: checkboxes
@@ -19,53 +19,26 @@ body:
       options:
         - label: I have searched existing issues and this is not a duplicate.
           required: true
-        - label: I am running a **Stock ROM** (OOS or ColorOS).
+        - label: My device is a **OnePlus 13** running **stock OxygenOS 16**.
           required: true
-        - label: "*(Non-OnePlus devices only)* I have read the [compatibility list](../../compatibility.md) and confirmed my device is listed or uses a OnePlus kernel with a matching KMI."
-
-  - type: dropdown
-    id: device_type
-    attributes:
-      label: Device Type
-      options:
-        - OnePlus device
-        - Non-OnePlus device (using a compatible OnePlus kernel)
-    validations:
-      required: true
+        - label: I flashed a kernel built by **this** repo (not upstream WildKernels or another fork).
+          required: true
 
   - type: input
     id: device
     attributes:
-      label: Device Name & Model
-      description: Full device name and model number (e.g. OnePlus 13 — PHB110, Realme GT 7 Pro — RMX5111).
-      placeholder: "e.g. OnePlus 13 — PHB110"
+      label: Model Number
+      description: Exact model number from Settings → About Phone.
+      placeholder: "e.g. PHB110"
     validations:
       required: true
-
-  - type: input
-    id: non_oneplus_kernel
-    attributes:
-      label: "(Non-OnePlus only) OnePlus kernel used"
-      description: Which OnePlus device kernel are you flashing? Must match KMI. Leave blank if OnePlus device.
-      placeholder: "e.g. OnePlus 13 (android15-6.6.89)"
 
   - type: input
     id: oos_version
     attributes:
-      label: OOS / COS Version
-      description: Full firmware version from Settings → About Phone.
-      placeholder: "e.g. ColorOS 15.0.0.800 / OxygenOS 15.0.0.800"
-    validations:
-      required: true
-
-  - type: dropdown
-    id: android_version
-    attributes:
-      label: Android Version
-      options:
-        - Android 14
-        - Android 15
-        - Android 16
+      label: OxygenOS Version
+      description: Full firmware build number from Settings → About Phone.
+      placeholder: "e.g. OxygenOS 16.0.0.400"
     validations:
       required: true
 
@@ -73,11 +46,10 @@ body:
     id: manager_type
     attributes:
       label: Manager Type
+      description: Which root manager matches the ZIP you flashed (`KSUN` or `KSU` in the filename)?
       options:
-        - KernelSU-Next
-        - KernelSU
-        - WildKSU
-        - pershoot KSUN
+        - KernelSU-Next (KSUN)
+        - KernelSU (KSU)
     validations:
       required: true
 
@@ -85,8 +57,8 @@ body:
     id: manager_version
     attributes:
       label: Manager Version
-      description: Manager Version shown in the manager app.
-      placeholder: "e.g. v3.2.0 (33129)"
+      description: Manager version shown in the manager app.
+      placeholder: "e.g. v3.2.0 (33207)"
     validations:
       required: true
 
@@ -95,7 +67,16 @@ body:
     attributes:
       label: Kernel Driver Version
       description: Driver version shown in the manager app (under GKI2).
-      placeholder: "e.g. 33129"
+      placeholder: "e.g. 33207"
+    validations:
+      required: true
+
+  - type: input
+    id: zip_name
+    attributes:
+      label: Flashed ZIP Filename
+      description: The exact AnyKernel3 ZIP you flashed — it encodes the kernel, KSU and SUSFS versions.
+      placeholder: "e.g. AK3-NIKITOS4683-OP13_A16_android15-6.6.30_KSUN_33207_SuSFS_v2.2.0.zip"
     validations:
       required: true
 
@@ -112,11 +93,20 @@ body:
   - type: input
     id: kernel_link
     attributes:
-      label: Kernel Release Tag or Actions Run Link
+      label: Release Tag or Actions Run Link
       description: |
-        - **Release**: paste the tag (e.g. `v2.1.0-r1`) or the full GitHub release URL.
+        - **Release**: paste the tag (e.g. `v2.2.0-r1`) or the full release URL.
         - **Artifact**: paste the full URL of the Actions run (e.g. `https://github.com/.../actions/runs/XXXXXXXXX`).
-      placeholder: "e.g. v2.1.0-r1 or https://github.com/.../actions/runs/..."
+      placeholder: "e.g. v2.2.0-r1 or https://github.com/.../actions/runs/..."
+    validations:
+      required: true
+
+  - type: input
+    id: uname
+    attributes:
+      label: Kernel Version (`uname -r`)
+      description: Run `adb shell uname -r`, or read it in the manager app.
+      placeholder: "e.g. 6.6.30-android15-nikitos4683"
     validations:
       required: true
 
@@ -167,8 +157,8 @@ body:
     id: last_working
     attributes:
       label: "(Regression only) Last working kernel version"
-      description: Only if you selected "Yes" for Regression. Which kernel version was the last one where this issue did not occur?
-      placeholder: "e.g. v2.1.0-r1 or 33095"
+      description: Only if you selected "Yes" for Regression. Which release tag or ZIP was the last one without this issue?
+      placeholder: "e.g. v2.2.0-r1"
 
   - type: dropdown
     id: stock_boot
@@ -187,7 +177,7 @@ body:
     attributes:
       label: Manager Log (name_log.tar.gz)
       description: |
-        Export logs from KSUN: **Settings → Export logs** → a `name_log.tar.gz` file will be generated.
+        Export logs from the manager: **Settings → Export logs** → a `name_log.tar.gz` file will be generated.
         Attach it here by dragging and dropping the file into this field, or click the attachment icon below the text box.
       placeholder: "Drag and drop name_log.tar.gz here, or click the attachment icon below..."
     validations:
@@ -196,9 +186,8 @@ body:
   - type: textarea
     id: kmsg
     attributes:
-      label: SYSTEM_LAST_KMSG (OnePlus devices only)
+      label: SYSTEM_LAST_KMSG
       description: |
-        **OnePlus devices only** — leave blank if non-OnePlus.
         Attach the file `/data/persist_log/backup/SYSTEM_LAST_KMSG.txt` by dragging and dropping it into this field, or click the attachment icon below the text box.
         Also include the **file modification date** (visible in file properties or via `ls -la /data/persist_log/backup/SYSTEM_LAST_KMSG.txt`).
       placeholder: |
@@ -210,4 +199,4 @@ body:
     id: additional
     attributes:
       label: Additional Context
-      description: Any other relevant information (Magisk/KernelSU modules installed, previous kernel, adb logcat, screenshots, etc.).
+      description: Any other relevant information (installed modules, previous kernel, `adb logcat`, screenshots, etc.).

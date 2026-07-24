@@ -7,8 +7,12 @@ body:
     attributes:
       value: |
         > [!NOTE]
-        > Use this template to request the addition of a kernel patch or feature to this build (e.g. droidspace, ntsync, hmbird, scheduler tweaks, etc.).
+        > Use this template to request a kernel patch or feature for the **OnePlus 13 / OxygenOS 16** build.
         > KernelSU-Next and SUSFS options are managed by their respective upstream repositories — open issues there instead.
+
+        **Already enabled:** SUSFS, HMBIRD SCX, BBRv3, CAKE & PIE qdisc, TTL target, IP set & IPv6 NAT, thin LTO, TMPFS XATTR / POSIX ACL.
+
+        **Supported by the build but deliberately turned off** (Droidspaces, Baseband Guard, NTSync, Unicode bypass fix, general optimization patches) — for these, ask to *enable* the existing toggle rather than to add a new patch, and say why it is worth the stability trade-off.
 
   - type: checkboxes
     id: prerequisites
@@ -19,6 +23,16 @@ body:
           required: true
         - label: This is a kernel patch/feature request, not a request for KernelSU-Next or SUSFS.
           required: true
+
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: Request Type
+      options:
+        - Enable an existing but disabled toggle
+        - Add a new patch / feature
+    validations:
+      required: true
 
   - type: input
     id: feature_name

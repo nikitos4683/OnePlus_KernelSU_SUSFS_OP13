@@ -1,5 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: WildKernels Telegram Group
+  - name: Is my device / ROM supported?
+    url: https://github.com/nikitos4683/OnePlus_KernelSU_SUSFS_OP13/blob/op13/compatibility.md
+    about: This fork builds for OnePlus 13 on stock OxygenOS 16 only. Check here before opening an issue.
+  - name: Another OnePlus device
+    url: https://github.com/WildKernels/OnePlus_KernelSU_SUSFS
+    about: This fork is OnePlus 13 only. For any other OnePlus device, use the upstream WildKernels project.
+  - name: WildKernels Telegram (upstream community)
     url: https://t.me/WildKernelsTG
-    about: Community support, non-OnePlus device testing, and general discussion.
+    about: General KernelSU / SUSFS discussion with the upstream community. Not a support channel for this fork — open an Issue here instead.
