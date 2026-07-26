@@ -1,5 +1,4 @@
 diff --git a/anykernel.sh b/anykernel.sh
-index 400c20b..03fb4b6 100755
 --- a/anykernel.sh
 +++ b/anykernel.sh
 @@ -4,7 +4,7 @@
@@ -11,7 +10,7 @@ index 400c20b..03fb4b6 100755
  do.devicecheck=0
  do.modules=0
  do.systemless=0
-@@ -40,8 +40,13 @@ case $kernel_version in
+@@ -45,8 +45,13 @@ case $kernel_version in
      *) ksu_supported=false ;;
  esac
  
@@ -27,28 +26,20 @@ index 400c20b..03fb4b6 100755
  
  # boot install
  split_boot
-@@ -53,25 +58,10 @@ else
+@@ -59,25 +64,9 @@ else
  fi
  
  ui_print " "
-+
 -ui_print "WildKernels Telegram Channel:"
--ui_print "https://t.me/WildKernels"
+-ui_print "https://t.me/WildKernelsTG"
 -ui_print " "
 -ui_print "WildKernels Website:"
 -ui_print "https://wildkernels.dev"
 -ui_print " "
--ui_print "Wild_KSU GitHub Repository:"
--ui_print "https://github.com/WildKernels/Wild_KSU"
--ui_print "KernelSU-Next fork focused on customization and root-hiding features!"
-+ui_print "Installation complete."
- ui_print " "
 -ui_print "GKI_KernelSU_SUSFS GitHub Repository:"
 -ui_print "https://github.com/WildKernels/GKI_KernelSU_SUSFS"
 -ui_print "GKI kernels with KernelSU and SUSFS."
-+ui_print "Kernel repo:"
-+ui_print "https://github.com/nikitos4683/OnePlus_KernelSU_SUSFS_OP13"
- ui_print " "
+-ui_print " "
 -ui_print "OnePlus_KernelSU_SUSFS GitHub Repository:"
 -ui_print "https://github.com/WildKernels/OnePlus_KernelSU_SUSFS"
 -ui_print "OnePlus kernels with KernelSU and SUSFS."
@@ -56,4 +47,13 @@ index 400c20b..03fb4b6 100755
 -ui_print "Samsung_KernelSU_SUSFS GitHub Repository:"
 -ui_print "https://github.com/WildKernels/Samsung_KernelSU_SUSFS"
 -ui_print "Samsung kernels with KernelSU and SUSFS."
+-ui_print " "
+-ui_print "If you have any questions or need support, feel free to join our Telegram channel!"
++
++ui_print "Installation complete."
  ui_print " "
+-ui_print "Thank you for using Wild Kernels! - TheWildJames"
++ui_print "Kernel repo:"
++ui_print "https://github.com/nikitos4683/OnePlus_KernelSU_SUSFS_OP13"
+ ui_print " "
+\ No newline at end of file

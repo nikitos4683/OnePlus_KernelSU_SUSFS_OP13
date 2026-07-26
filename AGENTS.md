@@ -86,6 +86,7 @@ The build matrix is generated from every `configs/**/*.json`, then filtered to `
   "unicode": false,
   "ntsync": false,
   "optimization_patches": false,
+  "blacklist_modules": "kernelsu,oplus_security_guard,oplus_qr_scan,oplus_score,oplus_vip_task,oplus_dns_cache,oplus_network_linkpower_module,oplus_data_module,oplus_secure_harden,oplus_security_keventupload,oplus_secure_guard_new,oplus_secure_guard,coresight_tpda,coresight_tgu,coresight_trace_noc,coresight_cti,coresight_qmi,coresight_dummy,coresight_remote_etm,coresight_tpdm,coresight_uetm,coresight_stm,coresight_tmc_sec,f_fs_ipc_log,qcom_iommu_debug,qti_battery_debug,rdbg,stm_heartbeat,stm_p_ost,stm_core,stm_ftrace,stm_console,spmi_pmic_arb_debug",
   "uname": "nikitos4683"
 }
 ```
@@ -107,6 +108,7 @@ Field meanings (validation lives in `build-kernel/action.yml` → *Validate Inpu
 | `rust_compiler` / `bindgen` | Optional in-tree rust / bindgen path overrides (only relevant when `rust_build`). |
 | `rust_build` | Enables rust/bindgen tooling and rust binder configs. |
 | `disk_cleanup` | Run the `disk-cleanup` action before building. |
+| `blacklist_modules` | Comma-separated vendor/kernel module names disabled by the module-overlay step; protected modules are filtered out. |
 | `uname` | Localversion / branding string. **Max 44 chars.** |
 | `hmbird`,`susfs`,`ds`,`bbg`,`bbr3`,`ttl`,`ip_set`,`unicode`,`ntsync`,`optimization_patches` | Boolean feature toggles (`"true"`/`"false"`) — see [Patch & Feature Logic](#patch--feature-logic). |
 
@@ -166,7 +168,7 @@ This is the authoritative build logic. High-level flow:
 8. Strip ABI-protected exports.
 9. Add **KernelSU** or **KernelSU-Next** (compute `KSU_VERSION`, set hook needs).
 10. Apply **SUSFS** patches (version-specific case block, `v1.5.8`…`v2.2.0`) + arch defconfig.
-11. Apply optional feature patches (BBG, KSU hooks, other patches, NTSync, Unicode) and defconfig fragments (tmpfs, BBRv3, qdisc, TTL, IP set/IPv6 NAT, Droidspaces, build tuning, rust).
+11. Apply optional feature patches (BBG, KSU hooks, module overlay/vendor-module debloat, other patches, NTSync, Unicode) and defconfig fragments (tmpfs, BBRv3, qdisc, TTL, IP set/IPv6 NAT, Droidspaces, build tuning, rust).
 12. Set branding localversion `-<android>-<uname>`.
 13. `make gki_defconfig` → tweak `.config` (localversion, O2/O3, `-mcpu=oryon-1` for `wild/sm8750|wild/sm8850|wild/sm8845`, LTO mode) → `olddefconfig` → parallel `make Image`.
 14. Validate the `Image` (see below), package into AnyKernel3 ZIP, compute SHA256s, upload artifact, save caches.
@@ -211,7 +213,7 @@ Feature toggle → what it does (all in `build-kernel/action.yml`):
 | `unicode` | Unicode bypass fix patch (version-selected). | ❌ off |
 | `optimization_patches` | Large general perf/latency patch stack. | ❌ off |
 
-**Always-applied** (independent of toggles): tmpfs XATTR/POSIX ACL, qdisc set (`FQ`, `FQ_CODEL`, `CAKE`, `PIE`, `FQ_PIE`), and build-tuning configs. So CAKE/PIE and tmpfs appear even though they have no dedicated flag.
+**Always-applied** (independent of toggles): module intercept/overlay support, the configured vendor-module blacklist, tmpfs XATTR/POSIX ACL, qdisc set (`FQ`, `FQ_CODEL`, `CAKE`, `PIE`, `FQ_PIE`), and build-tuning configs. So module debloat, CAKE/PIE, and tmpfs appear even though they have no dedicated boolean flag.
 
 Most patches use `patch -p1 --forward` with fuzz — tolerant by design, which means an upstream source change can silently stop a patch from applying and break the build with no change on this side. There are also several `sed`/`perl` "fake patch" fixups gated on `android15-6.6` to make SUSFS apply cleanly.
 
