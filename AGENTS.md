@@ -166,7 +166,7 @@ This is the authoritative build logic. High-level flow:
 8. Strip ABI-protected exports.
 9. Add **KernelSU** or **KernelSU-Next** (compute `KSU_VERSION`, set hook needs).
 10. Apply **SUSFS** patches (version-specific case block, `v1.5.8`…`v2.2.0`) + arch defconfig.
-11. Apply optional feature patches (BBG, KSU hooks, other patches, NTSync, Unicode) and defconfig fragments (tmpfs, BBRv3, qdisc, TTL, IP set/IPv6 NAT, Droidspaces, build tuning, rust).
+11. Apply optional feature patches (BBG, KSU hooks, other patches, NTSync, Unicode) and defconfig fragments (tmpfs, BBRv3-only, qdisc, TTL, IP set/IPv6 NAT, Droidspaces, build tuning, rust). The fork deliberately leaves vendor-module loading at the OnePlus factory behavior: no module overlay and no vendor-module blacklist patch.
 12. Set branding localversion `-<android>-<uname>`.
 13. `make gki_defconfig` → tweak `.config` (localversion, O2/O3, `-mcpu=oryon-1` for `wild/sm8750|wild/sm8850|wild/sm8845`, LTO mode) → `olddefconfig` → parallel `make Image`.
 14. Validate the `Image` (see below), package into AnyKernel3 ZIP, compute SHA256s, upload artifact, save caches.
@@ -202,7 +202,7 @@ Feature toggle → what it does (all in `build-kernel/action.yml`):
 |--------|--------|--------------|
 | `susfs` | Copy SUSFS fs/include files, apply version-matched patch set + `CONFIG_KSU_SUSFS_*`. | ✅ on |
 | `hmbird` | Apply OnePlus HMBIRD SCX (fengchi + overwriter + hmbird_config) patches. | ✅ on |
-| `bbr3` | `CONFIG_TCP_CONG_ADVANCED/BBR3` + backport patch for the GKI base. | ✅ on |
+| `bbr3` | Backport BBRv3, explicitly disable BBRv1, select BBRv3 as the kernel default, and verify all three conditions in the final config. | ✅ on |
 | `ttl` | TTL/HL target + match configs. | ✅ on |
 | `ip_set` | IP set + IPv6 NAT configs + `IPv6_NAT_FIX.patch`. | ✅ on |
 | `bbg` | Baseband Guard LSM (external setup script) + LSM Kconfig edit. | ❌ off |
@@ -211,7 +211,7 @@ Feature toggle → what it does (all in `build-kernel/action.yml`):
 | `unicode` | Unicode bypass fix patch (version-selected). | ❌ off |
 | `optimization_patches` | Large general perf/latency patch stack. | ❌ off |
 
-**Always-applied** (independent of toggles): tmpfs XATTR/POSIX ACL, qdisc set (`FQ`, `FQ_CODEL`, `CAKE`, `PIE`, `FQ_PIE`), and build-tuning configs. So CAKE/PIE and tmpfs appear even though they have no dedicated flag.
+**Always-applied** (independent of toggles): `fake_config.patch`, tmpfs XATTR/POSIX ACL, qdisc set (`FQ`, `FQ_CODEL`, `CAKE`, `PIE`, `FQ_PIE`), and build-tuning configs. `fake_config.patch` only changes the configuration reported through the embedded config data; it does not disable the corresponding compiled features.
 
 Most patches use `patch -p1 --forward` with fuzz — tolerant by design, which means an upstream source change can silently stop a patch from applying and break the build with no change on this side. There are also several `sed`/`perl` "fake patch" fixups gated on `android15-6.6` to make SUSFS apply cleanly.
 
@@ -243,10 +243,13 @@ On `make_release=true`:
 
 On every upstream sync, keep:
 - `uname: nikitos4683`, ZIP prefix `AK3-NIKITOS4683-` (parser strips exactly this), release brand `nikitos4683`.
-- `patches/local/anykernel_branding.patch` — the **only** local patch; rewrites `anykernel.sh` strings/URLs to nikitos4683. Applied to the manifest-synced AK3 tree (`$AK3_FOLDER`), so it must stay in sync with the AnyKernel3 revision pinned in the manifest — an upstream AK3 bump can break this patch.
+- `patches/local/anykernel_branding.patch` — the **only** local patch; rewrites `anykernel.sh` strings/URLs to nikitos4683. Applied to the manifest-synced AK3 tree (`$AK3_FOLDER`) with `--fuzz=0`, so it must stay in sync with the AnyKernel3 revision pinned in the manifest. If an upstream AK3 bump breaks it, regenerate the patch against that exact revision instead of relaxing the match.
 - Matrix filter pinned to `OP13`/`A16`; all non-OP13 configs/manifests deleted.
 - Optional patches off (`ds/bbg/unicode/ntsync/optimization_patches = false`).
-- BBRv3 as the sole BBR variant (`bbr3: true`, no forced default, no v1).
+- Rust build support off (`rust_build: false`).
+- BBRv3 as the sole compiled BBR variant and kernel default (`bbr3: true`; BBRv1 disabled, `DEFAULT_BBR3=y`, and `DEFAULT_TCP_CONG="bbr3"` verified after `olddefconfig`).
+- Stock OnePlus vendor-module behavior: no module intercept/overlay patch and no vendor-module debloat/blacklist patch. Drop both again if an upstream sync reintroduces them.
+- Keep `fake_config.patch`; it is part of the root-hiding configuration-reporting behavior.
 - Point new `kernel_patches` at `WildKernels/kernel_patches`.
 - The removal of upstream's dead `TheWildJames/AnyKernel3` clone (see [AnyKernel3 comes from the manifest](#anykernel3-comes-from-the-manifest-not-from-a-clone)) — re-drop it if a sync brings it back.
 - The OP13-scoped issue templates, and the deletion of upstream's `request_new_device.yml` / `request_compatibility.yml`.
