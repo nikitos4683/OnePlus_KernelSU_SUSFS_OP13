@@ -18,15 +18,17 @@
 ---
 
 ## 📋 Table of Contents
-- [⚠️ Disclaimer](#-disclaimer)
-- [🔗 Additional Resources](#-additional-resources)
-- [✨ Features](#-features)
-- [🛡️ Stability Policy](#-stability-policy)
-- [📝 Installation](#-installation)
-- [🌟 Special Thanks](#-special-thanks)
-- [💬 Support](#-support)
+- [⚠️ Disclaimer](#disclaimer)
+- [🔗 Additional Resources](#additional-resources)
+- [✨ Features](#features)
+- [🛡️ Stability Policy](#stability-policy)
+- [📝 Installation](#installation)
+- [🌟 Special Thanks](#special-thanks)
+- [💬 Support](#support)
 
 ---
+
+<a id="disclaimer"></a>
 
 ## ⚠️ Disclaimer
 
@@ -38,6 +40,8 @@ Flashing a custom kernel is a choice you make for your device. While we strive f
 *   **Your Choice:** By flashing this, you accept full responsibility for any outcomes.
 
 ---
+
+<a id="additional-resources"></a>
 
 ## 🔗 Additional Resources
 
@@ -56,6 +60,8 @@ Flashing a custom kernel is a choice you make for your device. While we strive f
 - ⏱️ **Update Frequency**: Every 12 hours (Automated)
 - 🎯 **Scope**: Only the OnePlusOSS repositories and branches referenced by the active `OP13` / `A16` manifest
 ---
+
+<a id="features"></a>
 
 ## ✨ Features
 
@@ -90,6 +96,8 @@ Our build configurations are meticulously tuned for the best experience on the O
 
 ---
 
+<a id="stability-policy"></a>
+
 ## 🛡️ Stability Policy
 
 This fork intentionally removes several upstream customizations that modify generic kernel module loading:
@@ -117,6 +125,8 @@ Filename breakdown:
 
 ---
 
+<a id="installation"></a>
+
 ## 📝 Installation Instructions
 
 Because this kernel is provided as an **AnyKernel3** flashable ZIP, the standard KernelSU boot.img patching method is not needed.
@@ -132,6 +142,8 @@ Because this kernel is provided as an **AnyKernel3** flashable ZIP, the standard
 > Always check the specific release notes for each version, as they may contain important update-specific instructions or prerequisites.
 
 ---
+
+<a id="special-thanks"></a>
 
 ## 🌟 Special Thanks
 
@@ -154,6 +166,8 @@ This project stands on the shoulders of giants. Immense gratitude to the followi
 *If you’ve contributed and aren't listed, please reach out so I can add you!* 🤝
 
 ---
+
+<a id="support"></a>
 
 ## 💬 Support
 
