@@ -1,4 +1,5 @@
 diff --git a/anykernel.sh b/anykernel.sh
+index 6a97197..8034156 100755
 --- a/anykernel.sh
 +++ b/anykernel.sh
 @@ -4,7 +4,7 @@
@@ -6,27 +7,28 @@ diff --git a/anykernel.sh b/anykernel.sh
  # global properties
  properties() { '
 -kernel.string=Wild Kernels by TheWildJames aka Morgan Weedman
-+kernel.string=nikitos4683 Kernel for OnePlus 13
++kernel.string=nikitos4683 Kernel for OnePlus 13 (OxygenOS 16)
  do.devicecheck=0
  do.modules=0
  do.systemless=0
-@@ -45,8 +45,13 @@ case $kernel_version in
+@@ -45,8 +45,14 @@ case $kernel_version in
      *) ksu_supported=false ;;
  esac
  
 -ui_print " " "  -> Wild Kernels Supported: $ksu_supported"
 -$ksu_supported || abort "  -> Non-GKI device, abort."
 +ui_print " "
-+ui_print "============================================"
-+ui_print "      nikitos4683 Kernel Installer"
-+ui_print "        OnePlus 13 | OOS16 | GKI"
-+ui_print "============================================"
-+ui_print "  -> KernelSU-supported base: $ksu_supported"
-+$ksu_supported || abort "  -> Unsupported non-GKI base, abort."
++ui_print "========================================"
++ui_print "        nikitos4683 Kernel"
++ui_print "  OnePlus 13 | OxygenOS 16 | GKI"
++ui_print "========================================"
++ui_print "  Detected kernel: $kernel_version"
++ui_print "  Supported GKI base: $ksu_supported"
++$ksu_supported || abort "  Unsupported GKI kernel version: $kernel_version"
  
  # boot install
  split_boot
-@@ -59,25 +64,9 @@ else
+@@ -59,25 +65,10 @@ else
  fi
  
  ui_print " "
@@ -47,13 +49,14 @@ diff --git a/anykernel.sh b/anykernel.sh
 -ui_print "Samsung_KernelSU_SUSFS GitHub Repository:"
 -ui_print "https://github.com/WildKernels/Samsung_KernelSU_SUSFS"
 -ui_print "Samsung kernels with KernelSU and SUSFS."
--ui_print " "
--ui_print "If you have any questions or need support, feel free to join our Telegram channel!"
-+
-+ui_print "Installation complete."
++ui_print "========================================"
++ui_print "  Installation complete"
+ ui_print " "
+-ui_print "If you have any questions or need support, feel free to join our Telegram channel!" 
++ui_print "  Project repository:"
++ui_print "  https://github.com/nikitos4683/OnePlus_KernelSU_SUSFS_OP13"
++ui_print "========================================"
  ui_print " "
 -ui_print "Thank you for using Wild Kernels! - TheWildJames"
-+ui_print "Kernel repo:"
-+ui_print "https://github.com/nikitos4683/OnePlus_KernelSU_SUSFS_OP13"
- ui_print " "
+-ui_print " "
 \ No newline at end of file

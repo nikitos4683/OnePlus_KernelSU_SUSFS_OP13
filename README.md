@@ -21,6 +21,7 @@
 - [⚠️ Disclaimer](#-disclaimer)
 - [🔗 Additional Resources](#-additional-resources)
 - [✨ Features](#-features)
+- [🛡️ Stability Policy](#-stability-policy)
 - [📝 Installation](#-installation)
 - [🌟 Special Thanks](#-special-thanks)
 - [💬 Support](#-support)
@@ -69,7 +70,7 @@ Our build configurations are meticulously tuned for the best experience on the O
 | Feature | Description |
 | :--- | :--- |
 | ✅ **HMBIRD SCX** | Advanced scheduler extensions |
-| ✅ **BBRv3** | TCP congestion control for lower latency and improved throughput |
+| ✅ **BBRv3-only** | BBRv3 is the kernel default; legacy BBRv1 is explicitly disabled |
 | ✅ **CAKE & PIE qdisc** | Modern queue disciplines for lower latency (bufferbloat mitigation) |
 | ✅ **TTL Target** | Native support for TTL modification |
 | ✅ **IP Set & IPv6 NAT** | Enhanced networking and firewall capabilities |
@@ -78,12 +79,33 @@ Our build configurations are meticulously tuned for the best experience on the O
 | ✅ **Custom Branding** | Localversion set to `nikitos4683` |
 | ✅ **nikitos4683 Branding** | Local AnyKernel3 custom branding patch |
 
-### 🚫 Disabled / Experimental
-*   **Optimization Patches:** General optimization patch stack is deliberately disabled to maintain stability.
-*   **Baseband Guard (BBG):** Currently inactive.
-*   **Unicode Bypass Fix:** Disabled in the current stable branch.
-*   **Rust Path:** Bindgen build path is currently disabled.
-*   **Droidspaces / NTSync:** Supported by the workflow codepath, but currently disabled in the active `OP13` config.
+### 🚫 Deliberately Disabled
+
+*   **General Optimization Patch Stack:** Disabled.
+*   **Rust / Rust Binder Build Path:** Disabled.
+*   **Baseband Guard (BBG):** Disabled.
+*   **Droidspaces:** Disabled.
+*   **NTSync:** Disabled.
+*   **Unicode Bypass Fix:** Disabled.
+
+---
+
+## 🛡️ Stability Policy
+
+This fork intentionally removes several upstream customizations that modify generic kernel module loading:
+
+| Removed customization | Current behavior |
+| :--- | :--- |
+| **Module intercept / overlay** | Removed completely. The kernel does not embed external prebuilt `.ko` files and does not replace vendor modules at load time. |
+| **Vendor-module debloat / blacklist** | Removed completely. No custom module blacklist is generated, no `CONFIG_DEBLOAT_VENDOR_MODULES` patch is applied, and OnePlus vendor modules retain their stock loading behavior. |
+| **Automatic BBR-related module blocking** | Removed together with vendor-module debloat. Enabling BBRv3 does not blacklist `oplus_network_tuning` or `oplus_networks_tuning`. |
+| **General optimization patch stack** | Kept disabled instead of applying the entire experimental stack as one unit. |
+
+The following deliberate customizations remain:
+
+*   **BBRv3-only:** Legacy BBRv1 is disabled, and BBRv3 is selected as the kernel default congestion control.
+*   **`fake_config.patch`:** Retained as part of the root-hiding configuration-reporting behavior. It changes the configuration exposed through the embedded config data, not the features actually compiled into the kernel.
+*   **SUSFS, KernelSU / KernelSU-Next, HMBIRD, TTL, IP Set, IPv6 NAT, qdisc support, Thin LTO, and branding:** Retained as documented above.
 
 ---
 

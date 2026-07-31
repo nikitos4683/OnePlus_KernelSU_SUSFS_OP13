@@ -923,7 +923,7 @@ jobs:
               # Build features string based on boolean values
               [[ "$hmbird" == "true" ]] && features+=("🐦 HMBIRD")
               [[ "$susfs" == "true" ]] && features+=("ඞ SUSFS")
-              [[ "$bbr3" == "true" ]] && features+=("🚀 BBRv3")
+              [[ "$bbr3" == "true" ]] && features+=("🚀 BBRv3-only")
               [[ "$bbg" == "true" ]] && features+=("🛡️ BBG")
               [[ "$ttl" == "true" ]] && features+=("🌐 TTL")
               [[ "$ip_set" == "true" ]] && features+=("🧱 IP Set & IPv6 NAT")
@@ -1084,7 +1084,7 @@ jobs:
             echo "- **HMBIRD SCX** - Advanced scheduler extensions." >> release_notes.md
           fi
           if [ "$BBR3_ENABLED" = "true" ]; then
-            echo "- **BBRv3** - Improved TCP congestion control with less bufferbloat and better loss response." >> release_notes.md
+            echo "- **BBRv3-only** - BBRv3 is the kernel default and legacy BBRv1 is explicitly disabled." >> release_notes.md
           fi
           echo "- **CAKE & PIE qdisc** - Modern queue disciplines for lower latency (bufferbloat mitigation)." >> release_notes.md
           if [ "$TTL_ENABLED" = "true" ]; then
