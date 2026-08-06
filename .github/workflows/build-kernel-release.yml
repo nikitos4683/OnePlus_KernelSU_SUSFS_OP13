@@ -909,7 +909,7 @@ jobs:
             feature_flags=$(jq -r --arg MODEL "$model" --arg OS "$os_ver" '
               .[] |
               select(.model == $MODEL and .os_version == $OS) |
-              "\(.hmbird // false)\t\(.susfs // false)\t\(.bbr3 // false)\t\(.bbg // false)\t\(.ttl // false)\t\(.ip_set // false)\t\(.unicode // false)\t\(.optimization_patches // false)\t\(.ds // false)\t\(.ntsync // false)"
+              "\(.hmbird // false)\t\(.susfs // false)\t\(.bbr3 // false)\t\(.bbg // false)\t\(.ttl // false)\t\(.ip_set // false)\t\(.unicode // false)\t\(.ds // false)\t\(.ntsync // false)"
             ' <<< "$JSON_BUILD_DATA")
 
             features=()
@@ -918,7 +918,7 @@ jobs:
               echo "Warning: No JSON entry found for model: $model" >&2
               features_str="N/A"
             else
-              IFS=$'\t' read -r hmbird susfs bbr3 bbg ttl ip_set unicode optimization_patches ds ntsync <<< "$feature_flags"
+              IFS=$'\t' read -r hmbird susfs bbr3 bbg ttl ip_set unicode ds ntsync <<< "$feature_flags"
 
               # Build features string based on boolean values
               [[ "$hmbird" == "true" ]] && features+=("🐦 HMBIRD")
@@ -928,7 +928,6 @@ jobs:
               [[ "$ttl" == "true" ]] && features+=("🌐 TTL")
               [[ "$ip_set" == "true" ]] && features+=("🧱 IP Set & IPv6 NAT")
               [[ "$unicode" == "true" ]] && features+=("🔧 Unicode Fix")
-              [[ "$optimization_patches" == "true" ]] && features+=("⚙️ Optimisation Patches")
               [[ "$ds" == "true" ]] && features+=("💻 Droidspaces")
               [[ "$ntsync" == "true" ]] && features+=("🔃 NTSync")
 
@@ -972,7 +971,6 @@ jobs:
           TTL_ENABLED=$(jq -r 'any(.[]; .ttl == true)' <<< "$JSON_BUILD_DATA")
           IP_SET_ENABLED=$(jq -r 'any(.[]; .ip_set == true)' <<< "$JSON_BUILD_DATA")
           UNICODE_ENABLED=$(jq -r 'any(.[]; .unicode == true)' <<< "$JSON_BUILD_DATA")
-          OPT_PATCHES_ENABLED=$(jq -r 'any(.[]; .optimization_patches == true)' <<< "$JSON_BUILD_DATA")
           DS_ENABLED=$(jq -r 'any(.[]; (.ds // false) == true)' <<< "$JSON_BUILD_DATA")
           NTSYNC_ENABLED=$(jq -r 'any(.[]; (.ntsync // false) == true)' <<< "$JSON_BUILD_DATA")
           SUSFS_ENABLED=$(jq -r 'any(.[]; .susfs == true)' <<< "$JSON_BUILD_DATA")
@@ -1100,9 +1098,6 @@ jobs:
           if [ -n "$CUSTOM_UNAME" ]; then
             echo "- **Custom Branding** - Localversion set to \`$CUSTOM_UNAME\`." >> release_notes.md
           fi
-          if [ "$OPT_PATCHES_ENABLED" = "true" ]; then
-            echo "- **Optimisation Patches** - Optional general performance tuning patchset." >> release_notes.md
-          fi
           if [ "$DS_ENABLED" = "true" ]; then
             echo "- **Droidspaces** - Portable Linux container support." >> release_notes.md
           fi
@@ -1127,11 +1122,6 @@ jobs:
             echo "- **Rust Path** - Bindgen build path is enabled for this build." >> release_notes.md
           else
             echo "- **Rust Path** - Bindgen build path is currently disabled." >> release_notes.md
-          fi
-          if [ "$OPT_PATCHES_ENABLED" = "true" ]; then
-            echo "- **Optimisation Patches** - Enabled for this build." >> release_notes.md
-          else
-            echo "- **Optimisation Patches** - Disabled in the current stable branch." >> release_notes.md
           fi
           cat << EOF >> release_notes.md
 
@@ -1165,15 +1155,6 @@ jobs:
           ---
 
           EOF
-          if [ "$OPT_PATCHES_ENABLED" = "true" ]; then
-            cat << EOF >> release_notes.md
-          ### ⚙️ Optional Tuning
-          - **Optimisation Patches** - Optional general performance tuning patchset.
-
-          ---
-
-          EOF
-          fi
           cat << EOF >> release_notes.md
           ## 📥 Installation Instructions
 

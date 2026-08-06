@@ -87,7 +87,6 @@ Our build configurations are meticulously tuned for the best experience on the O
 
 ### 🚫 Deliberately Disabled
 
-*   **General Optimization Patch Stack:** Disabled.
 *   **Rust / Rust Binder Build Path:** Disabled.
 *   **Baseband Guard (BBG):** Disabled.
 *   **Droidspaces:** Disabled.
@@ -107,7 +106,7 @@ This fork intentionally removes several upstream customizations that modify gene
 | **Module intercept / overlay** | Removed completely. The kernel does not embed external prebuilt `.ko` files and does not replace vendor modules at load time. |
 | **Vendor-module debloat / blacklist** | Removed completely. No custom module blacklist is generated, no `CONFIG_DEBLOAT_VENDOR_MODULES` patch is applied, and OnePlus vendor modules retain their stock loading behavior. |
 | **Automatic BBR-related module blocking** | Removed together with vendor-module debloat. Enabling BBRv3 does not blacklist `oplus_network_tuning` or `oplus_networks_tuning`. |
-| **General optimization patch stack** | Kept disabled instead of applying the entire experimental stack as one unit. |
+| **General optimization patch stack** | Removed completely. Performance patches may only be introduced individually after OP13-specific validation. |
 
 The following deliberate customizations remain:
 

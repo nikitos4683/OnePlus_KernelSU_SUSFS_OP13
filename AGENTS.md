@@ -85,7 +85,6 @@ The build matrix is generated from every `configs/**/*.json`, then filtered to `
   "ip_set": true,
   "unicode": false,
   "ntsync": false,
-  "optimization_patches": false,
   "uname": "nikitos4683"
 }
 ```
@@ -108,7 +107,7 @@ Field meanings (validation lives in `build-kernel/action.yml` → *Validate Inpu
 | `rust_build` | Enables rust/bindgen tooling and rust binder configs. |
 | `disk_cleanup` | Run the `disk-cleanup` action before building. |
 | `uname` | Localversion / branding string. **Max 44 chars.** |
-| `hmbird`,`susfs`,`ds`,`bbg`,`bbr3`,`ttl`,`ip_set`,`unicode`,`ntsync`,`optimization_patches` | Boolean feature toggles (`"true"`/`"false"`) — see [Patch & Feature Logic](#patch--feature-logic). |
+| `hmbird`,`susfs`,`ds`,`bbg`,`bbr3`,`ttl`,`ip_set`,`unicode`,`ntsync` | Boolean feature toggles (`"true"`/`"false"`) — see [Patch & Feature Logic](#patch--feature-logic). |
 
 > Note: `android_version` stays `android15` while `os_version` is `A16` — the GKI base is `android15-6.6` even though the marketing OS is Android 16. This mismatch is intentional; don't "fix" it.
 
@@ -209,7 +208,6 @@ Feature toggle → what it does (all in `build-kernel/action.yml`):
 | `ds` | Droidspaces (SYSVIPC/KABI patches + configs). | ❌ off |
 | `ntsync` | NTSync primitives (model/GKI-matched patch). | ❌ off |
 | `unicode` | Unicode bypass fix patch (version-selected). | ❌ off |
-| `optimization_patches` | Large general perf/latency patch stack. | ❌ off |
 
 **Always-applied** (independent of toggles): `fake_config.patch`, tmpfs XATTR/POSIX ACL, qdisc set (`FQ`, `FQ_CODEL`, `CAKE`, `PIE`, `FQ_PIE`), and build-tuning configs. `fake_config.patch` only changes the configuration reported through the embedded config data; it does not disable the corresponding compiled features.
 
@@ -245,7 +243,8 @@ On every upstream sync, keep:
 - `uname: nikitos4683`, ZIP prefix `AK3-NIKITOS4683-` (parser strips exactly this), release brand `nikitos4683`.
 - `patches/local/anykernel_branding.patch` — the **only** local patch; rewrites `anykernel.sh` strings/URLs to nikitos4683. Applied to the manifest-synced AK3 tree (`$AK3_FOLDER`) with `--fuzz=0`, so it must stay in sync with the AnyKernel3 revision pinned in the manifest. If an upstream AK3 bump breaks it, regenerate the patch against that exact revision instead of relaxing the match.
 - Matrix filter pinned to `OP13`/`A16`; all non-OP13 configs/manifests deleted.
-- Optional patches off (`ds/bbg/unicode/ntsync/optimization_patches = false`).
+- Optional patches off (`ds/bbg/unicode/ntsync = false`).
+- The upstream general optimization patch stack is removed completely. Performance patches may only be introduced individually after OP13-specific validation; drop the stack again if an upstream sync reintroduces it.
 - Rust build support off (`rust_build: false`).
 - BBRv3 as the sole compiled BBR variant and kernel default (`bbr3: true`; BBRv1 disabled, `DEFAULT_BBR3=y`, and `DEFAULT_TCP_CONG="bbr3"` verified after `olddefconfig`).
 - Stock OnePlus vendor-module behavior: no module intercept/overlay patch and no vendor-module debloat/blacklist patch. Drop both again if an upstream sync reintroduces them.

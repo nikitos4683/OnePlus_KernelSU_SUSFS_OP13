@@ -12,7 +12,7 @@ body:
 
         **Already enabled:** SUSFS, HMBIRD SCX, BBRv3, CAKE & PIE qdisc, TTL target, IP set & IPv6 NAT, thin LTO, TMPFS XATTR / POSIX ACL.
 
-        **Supported by the build but deliberately turned off** (Droidspaces, Baseband Guard, NTSync, Unicode bypass fix, general optimization patches) — for these, ask to *enable* the existing toggle rather than to add a new patch, and say why it is worth the stability trade-off.
+        **Supported by the build but deliberately turned off** (Droidspaces, Baseband Guard, NTSync, Unicode bypass fix) — for these, ask to *enable* the existing toggle rather than to add a new patch, and say why it is worth the stability trade-off. The upstream general optimization stack was removed; request any performance patch individually with OP13-specific justification.
 
   - type: checkboxes
     id: prerequisites
