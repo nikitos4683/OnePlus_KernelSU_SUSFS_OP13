@@ -132,13 +132,13 @@ Manual-only (`workflow_dispatch`). Key inputs:
 | Input | Purpose |
 |-------|---------|
 | `make_release` | Create a **draft** release after successful builds. |
-| `ksu_options` | JSON array of KSU variants, e.g. `[{"type":"ksun","hash":"dev"}]`. Missing `hash` defaults: `KSUN→9124eb15ea6691b818fb12ee28fc96fc4926afb3` (33389, pinned after an upstream OP13 CI success with SUSFS 2.3.0), `KSU→main`. The dispatch default uses the same pinned KSUN SHA; explicit refs remain supported. |
+| `ksu_options` | JSON array of KSU variants, e.g. `[{"type":"ksun","hash":"dev"}]`. Missing `hash` defaults: `KSUN→v3.4.2` (stable release, kernel build number 33355), `KSU→main`. The dispatch default uses the same KSUN release tag; explicit refs remain supported. |
 | `optimize_level` | `O2` or `O3`. |
 | `clean_build` | Disable ccache. |
 | `debug` | Dump debug artifacts / verbose logs. |
 | `mirror_toolchains` | Run the toolchain mirror before building (rarely needed). |
 | `build_timestamp` | Fixed `uname -a` timestamp for reproducibility (empty = current time). |
-| `android15-6_6_susfs_branch_or_commit` | Override SUSFS ref (empty = `gki-android15-6.6`). |
+| `android15-6_6_susfs_branch_or_commit` | Default: `afb39173a6cc9f188093e7c8b71b709fc40f6565` (SUSFS 2.3.0). Explicit overrides remain supported; empty = latest `gki-android15-6.6`. |
 
 Jobs, in order:
 
@@ -246,7 +246,8 @@ On every upstream sync, keep:
 - Optional patches off (`ds/bbg/unicode/ntsync = false`).
 - The upstream general optimization patch stack is removed completely. Performance patches may only be introduced individually after OP13-specific validation; drop the stack again if an upstream sync reintroduces it.
 - Rust build support off (`rust_build: false`).
-- KSUN defaults pinned to `9124eb15ea6691b818fb12ee28fc96fc4926afb3` (33389). Keep the dispatch default and both missing-hash normalization paths aligned; newer refs require an explicit build override until validated.
+- KSUN defaults pinned to stable release `v3.4.2` (kernel build number 33355, resolved commit `4c706b5938665866ebe16944a481a7b91e3396af`). Keep the dispatch default and both missing-hash normalization paths aligned. When the maintainer asks for the latest KSUN, use the latest published stable release, not a development branch tip.
+- Default SUSFS workflow ref pinned to `afb39173a6cc9f188093e7c8b71b709fc40f6565` (2.3.0). Check compatibility with both the selected KSUN release and the OnePlus kernel source before changing either default.
 - Keep TLS certificate verification enabled; do not reintroduce upstream's global `http.sslVerify false`.
 - BBRv3 as the sole compiled BBR variant and kernel default (`bbr3: true`; BBRv1 disabled, `DEFAULT_BBR3=y`, and `DEFAULT_TCP_CONG="bbr3"` verified after `olddefconfig`).
 - Stock OnePlus vendor-module behavior: no module intercept/overlay patch and no vendor-module debloat/blacklist patch. Drop both again if an upstream sync reintroduces them.

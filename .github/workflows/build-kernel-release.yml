@@ -13,10 +13,10 @@ on:
         type: boolean
         default: false
       ksu_options:
-        description: 'KernelSU build JSON (KSUN defaults to the pinned 33389 commit)'
+        description: 'KernelSU build JSON (KSUN defaults to stable release v3.4.2)'
         required: true
         type: string
-        default: '[{"type":"ksun","hash":"9124eb15ea6691b818fb12ee28fc96fc4926afb3"}]'
+        default: '[{"type":"ksun","hash":"v3.4.2"}]'
       optimize_level:
         description: "Compiler optimization level"
         required: true
@@ -42,9 +42,9 @@ on:
         type: string
         default: ''
       android15-6_6_susfs_branch_or_commit:
-        description: 'Enter SusFS Branch or commit hash for OnePlus 13 (android15-6.6)'
+        description: 'SUSFS ref for OP13 (default: pinned 2.3.0; empty: latest GKI branch)'
         type: string
-        default: ''
+        default: 'afb39173a6cc9f188093e7c8b71b709fc40f6565'
 
 jobs:
   set-op-model:
@@ -80,7 +80,7 @@ jobs:
           echo "::group::Matrix generation"
 
           ksu_options_raw='${{ github.event.inputs.ksu_options }}'
-          if ! ksu_options_normalized=$(echo "$ksu_options_raw" | jq -c 'map(if .type then .type |= ascii_upcase | if .hash == null then if .type == "KSUN" then .hash = "9124eb15ea6691b818fb12ee28fc96fc4926afb3" elif .type == "KSU" then .hash = "main" else .hash end else . end else error("No type found") end)' 2>&1); then
+          if ! ksu_options_normalized=$(echo "$ksu_options_raw" | jq -c 'map(if .type then .type |= ascii_upcase | if .hash == null then if .type == "KSUN" then .hash = "v3.4.2" elif .type == "KSU" then .hash = "main" else .hash end else . end else error("No type found") end)' 2>&1); then
             echo "::error::ksu_options validation failed: $ksu_options_normalized"
             exit 1
           fi
@@ -844,7 +844,7 @@ jobs:
           done
 
           ksu_options_raw='${{ github.event.inputs.ksu_options }}'
-          ksu_options_normalized=$(echo "$ksu_options_raw" | jq -c 'map(if .type then .type |= ascii_upcase | if .hash == null then if .type == "KSUN" then .hash = "9124eb15ea6691b818fb12ee28fc96fc4926afb3" elif .type == "KSU" then .hash = "main" else .hash end else . end else error("No type found") end)' 2>&1)
+          ksu_options_normalized=$(echo "$ksu_options_raw" | jq -c 'map(if .type then .type |= ascii_upcase | if .hash == null then if .type == "KSUN" then .hash = "v3.4.2" elif .type == "KSU" then .hash = "main" else .hash end else . end else error("No type found") end)' 2>&1)
 
           ksun_hash=$(echo "$ksu_options_normalized" | jq -r 'map(select(.type == "KSUN")) | first | .hash // empty')
           ksu_hash=$(echo "$ksu_options_normalized" | jq -r 'map(select(.type == "KSU")) | first | .hash // empty')
