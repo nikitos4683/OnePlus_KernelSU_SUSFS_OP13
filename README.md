@@ -68,8 +68,8 @@ Flashing a custom kernel is a choice you make for your device. While we strive f
 Our build configurations are meticulously tuned for the best experience on the OnePlus 13.
 
 ### 💎 Core Integrations
-*   **KernelSU / KernelSU-Next:** First-class support for both. Defaulting to `KSUN` (dev branch) for the latest security features.
-*   **SUSFS Support:** Built-in hooks for advanced system-user-space filesystem isolation (SUSFS `v2.2.0`).
+*   **KernelSU / KernelSU-Next:** First-class support for both. The default `KSUN` revision is pinned to `9124eb15` (33389), which built successfully with SUSFS 2.3.0 in upstream CI. Override `ksu_options` to test another revision.
+*   **SUSFS Support:** Built-in hooks for advanced system-user-space filesystem isolation (SUSFS `v2.3.0`).
 *   **OxygenOS 16 Optimized:** Specifically targeted at `OP13` with Android 16 & Kernel 6.6.
 
 ### 🛠️ Enabled Features

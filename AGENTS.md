@@ -19,7 +19,7 @@ Guidance for AI agents (and humans) working in this repository. Read this before
 
 ### Sync strategy (agreed with the maintainer)
 
-- Merge upstream **only up to the last known-good RELEASE commit**, not `upstream/main` HEAD (recent upstream commits may be unstable). Find the release commit from the upstream release GitHub Actions run's `headSha`.
+- Merge upstream **only up to the last known-good RELEASE commit**, not `upstream/main` HEAD (recent upstream commits may be unstable). Find the release commit from the upstream release GitHub Actions run's `headSha`. The maintainer explicitly authorized the current sync through `d137109ed3c84316ae562d679d42c548e2e090a6` (2026-10-18); this is a one-off exception, not a change to the release-only policy.
 - Merge into a **new branch** (e.g. `sync-op13-release`), resolve conflicts, then let the maintainer decide when to merge into `op13`.
 - Established style is **merge commits, not rebase**.
 - On every sync, **preserve the fork customizations** listed under [Branding & Customizations To Preserve](#branding--customizations-to-preserve).
@@ -132,7 +132,7 @@ Manual-only (`workflow_dispatch`). Key inputs:
 | Input | Purpose |
 |-------|---------|
 | `make_release` | Create a **draft** release after successful builds. |
-| `ksu_options` | JSON array of KSU variants, e.g. `[{"type":"ksun","hash":"dev"}]`. Missing `hash` defaults: `KSUN→dev`, `KSU→main`. |
+| `ksu_options` | JSON array of KSU variants, e.g. `[{"type":"ksun","hash":"dev"}]`. Missing `hash` defaults: `KSUN→9124eb15ea6691b818fb12ee28fc96fc4926afb3` (33389, pinned after an upstream OP13 CI success with SUSFS 2.3.0), `KSU→main`. The dispatch default uses the same pinned KSUN SHA; explicit refs remain supported. |
 | `optimize_level` | `O2` or `O3`. |
 | `clean_build` | Disable ccache. |
 | `debug` | Dump debug artifacts / verbose logs. |
@@ -161,10 +161,10 @@ This is the authoritative build logic. High-level flow:
 4. Read the real kernel version from the synced `Makefile` (`VERSION.PATCHLEVEL.SUBLEVEL`) and derive `SUSFS_KERNEL_BRANCH=gki-<android>-<X.Y>`.
 5. Detect clang: priority **ZyC URL → `c_compiler` override → in-tree prebuilts → system clang**. Optionally detect/install rust + bindgen when `rust_build`.
 6. Restore ccache and (if LTO) the LTO/LD cache from release assets.
-7. Clone deps into `$GITHUB_WORKSPACE` (`kernel_patches`, `susfs4ksu`), apply the local AnyKernel3 branding patch, and check out the resolved SUSFS ref. **AnyKernel3 is not cloned — see below.**
+7. Fetch deps into `$GITHUB_WORKSPACE`: clone `kernel_patches`, download the resolved SUSFS SHA through the GitLab archive API (direct branch/ref inputs retain Git checkout), and apply the local AnyKernel3 branding patch. **AnyKernel3 is not cloned — see below.**
 8. Strip ABI-protected exports.
 9. Add **KernelSU** or **KernelSU-Next** (compute `KSU_VERSION`, set hook needs).
-10. Apply **SUSFS** patches (version-specific case block, `v1.5.8`…`v2.2.0`) + arch defconfig.
+10. Apply **SUSFS** patches (version-specific case block, `v1.5.8`…`v2.3.0`) + arch defconfig.
 11. Apply optional feature patches (BBG, KSU hooks, other patches, NTSync, Unicode) and defconfig fragments (tmpfs, BBRv3-only, qdisc, TTL, IP set/IPv6 NAT, Droidspaces, build tuning, rust). The fork deliberately leaves vendor-module loading at the OnePlus factory behavior: no module overlay and no vendor-module blacklist patch.
 12. Set branding localversion `-<android>-<uname>`.
 13. `make gki_defconfig` → tweak `.config` (localversion, O2/O3, `-mcpu=oryon-1` for `wild/sm8750|wild/sm8850|wild/sm8845`, LTO mode) → `olddefconfig` → parallel `make Image`.
@@ -182,7 +182,7 @@ So: **to change the packaged AnyKernel3, edit the manifest project revision.** B
 
 > **Upstream drift warning.** Upstream additionally runs `retry_clone https://github.com/TheWildJames/AnyKernel3.git` (branch `gki-2.0`) inside *Fetch SusFS and Other Dependencies*. That step's cwd is `$GITHUB_WORKSPACE`, so the clone lands at `$GITHUB_WORKSPACE/AnyKernel3` — a **different path** from `$AK3_FOLDER`, and nothing ever reads it. This fork removed that dead clone; **an upstream merge may reintroduce it — drop it again.**
 
-Contrast: `kernel_patches` and `susfs4ksu` *are* consumed from their clones, because `$KERNEL_PATCHES_FOLDER`/`$SUSFS_FOLDER` do resolve to `$GITHUB_WORKSPACE/...`.
+Contrast: `kernel_patches` and `susfs4ksu` *are* consumed from their fetched directories, because `$KERNEL_PATCHES_FOLDER`/`$SUSFS_FOLDER` do resolve to `$GITHUB_WORKSPACE/...`.
 
 ## Caching Architecture (release-asset based, NOT `actions/cache`)
 
@@ -246,6 +246,8 @@ On every upstream sync, keep:
 - Optional patches off (`ds/bbg/unicode/ntsync = false`).
 - The upstream general optimization patch stack is removed completely. Performance patches may only be introduced individually after OP13-specific validation; drop the stack again if an upstream sync reintroduces it.
 - Rust build support off (`rust_build: false`).
+- KSUN defaults pinned to `9124eb15ea6691b818fb12ee28fc96fc4926afb3` (33389). Keep the dispatch default and both missing-hash normalization paths aligned; newer refs require an explicit build override until validated.
+- Keep TLS certificate verification enabled; do not reintroduce upstream's global `http.sslVerify false`.
 - BBRv3 as the sole compiled BBR variant and kernel default (`bbr3: true`; BBRv1 disabled, `DEFAULT_BBR3=y`, and `DEFAULT_TCP_CONG="bbr3"` verified after `olddefconfig`).
 - Stock OnePlus vendor-module behavior: no module intercept/overlay patch and no vendor-module debloat/blacklist patch. Drop both again if an upstream sync reintroduces them.
 - Keep `fake_config.patch`; it is part of the root-hiding configuration-reporting behavior.
@@ -255,7 +257,7 @@ On every upstream sync, keep:
 
 ## Docs & Known Drift
 
-- `README.md` — public overview; advertises KSU/KSUN, SUSFS `v2.2.0`, HMBIRD, BBRv3, CAKE/PIE, TTL, IP set/IPv6 NAT, thin LTO, tmpfs XATTR, custom branding. Keep these claims aligned with the config flags and action behavior, and keep its "Update Frequency" line in sync with the monitor cron.
+- `README.md` — public overview; advertises KSU/KSUN, SUSFS `v2.3.0`, HMBIRD, BBRv3, CAKE/PIE, TTL, IP set/IPv6 NAT, thin LTO, tmpfs XATTR, custom branding. Keep these claims aligned with the config flags and action behavior, and keep its "Update Frequency" line in sync with the monitor cron.
 - `compatibility.md` — policy: stock OxygenOS 16 (Android 16) only, GKI 6.6.x on the `android15-6.6` KMI, kernel source tracked from OnePlusOSS `oneplus/sm8750_b_16.0.0_oneplus_13`; tells users to verify their KMI with `uname -r`; don't reuse ZIPs across major OTAs; nothing outside OP13/A16 is supported. Keep the KMI/source-branch facts in step with `configs/a16/OP13.json` and the manifest.
 - `.github/ISSUE_TEMPLATE/` — **rewritten for this fork**: only `bug_report.yml` (OP13 / stock OxygenOS 16, KSUN/KSU managers, ZIP filename + `uname -r` required) and `feature_request.yml` (distinguishes "enable an existing disabled toggle" from "add a new patch") remain. Upstream's `request_new_device.yml` and `request_compatibility.yml` were **deleted** — this fork will never add a device and keeps no non-OnePlus compatibility list. `config.yml` routes other devices to upstream and labels the WildKernels Telegram as upstream community, not fork support. **An upstream merge may resurrect the deleted forms — delete them again.**
 - `clean-up.yml`'s device dropdown and the generic GKI helper logic in `set-op-model` (SUSFS keys for android12-5.10 … android16-6.12) are likewise multi-device leftovers — harmless, but don't mistake them for supported targets.
