@@ -1,7 +1,7 @@
 # 📱 OnePlus 13 Kernel Tracker
 > **Scope:** OP13 / A16
 > **Manifest:** `manifests/a16/oneplus_13_w.xml`
-> **Last Update:** Tue Nov 10 06:19:19 UTC 2026 (UTC)
+> **Last Update:** Tue Nov 10 19:24:52 UTC 2026 (UTC)
 Automated report for the tracked OnePlusOSS sources used by this repository.
 
 ## 🎯 Tracked Sources
